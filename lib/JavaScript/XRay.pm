@@ -12,7 +12,7 @@ Version 0.9
 
 =cut
 
-our $VERSION = '0.91';
+our $VERSION = '0.92';
 our $PACKAGE = __PACKAGE__;
 
 =head1 SYNOPSIS
@@ -27,56 +27,56 @@ page the Synopsis before they throughly read the pod.
  
  # HTML page with a <body> tag and hopefully some JavaScript
  # if you're using this module :)
-
- my $html_page = "<html><head></head><body></body></html>";
+ 
+ my $html_page = do { local $/; <> };
  
  # the 'alias' is the prefix which all your switches will be 
  # prefixed with and helps "scope" the injected JavaScript
  # variables and functions so they don't collide with 
  # anything in your page.
-
+ 
  my $alias = 'jsxray';    # jsxray is the default
-
+ 
  # switches is just a hash ref that could be build for 
  # incoming parameters on a query string or passed 
  # via options via a command line script
-
+ 
  # In the future, hooks may be built for building the 
  # switches for popular frameworks.  The idea is that you
  # want to look through the incoming param list and pass
  # anything that matches your alias.  This interface isn't
  # the cleanest, but just wanted to make it generic.  It
  # can definately be improved...
-
+  
  # via CGI.pm
-
+ 
  # my $q = CGI->new;
  # my $switches = { 
  #     map  { $_ => $q->param($_) }
  #     grep { /^$alias/ } $q->param
  # };
-
+ 
  # via mod_perl
-
+ 
  #  my $req = Apache::Request->new($r);
  #  my $switches = { 
  #    map { $_ => $req->param($_) } 
  #    grep { /^$alias/ } $req->param
  # };
-
+ 
  # or just hard coded to get something to work
-
+ 
  my $switches = { $alias => 1 };
-
+ 
  # or if you only one to see functions matching '/^ajax/'
-
- my $switches = { $alias => 1, $alias . "_filter" => 'ajax' };
-
+ 
+ # my $switches = { $alias => 1, $alias . "_filter" => 'ajax' };
+ 
  # now we only want to filter if its turned on so we can 
  # you may want put your switch building inside this 
  # conditional as well and just check for your alias 
-
- if ( exists $switches->{$alias} ) {
+ 
+ if ( $switches->{$alias} == 1 ) {
      my $js_xray = JavaScript::XRay->new(
          alias    => $alias,
          switches => $switches,
@@ -84,7 +84,7 @@ page the Synopsis before they throughly read the pod.
      $html_page = $js_xray->filter($html_page);
  }
 
- # do somethng with the modified page...
+ print $html_page;
 
 =head1 DESCRIPTION
 

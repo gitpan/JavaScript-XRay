@@ -1,5 +1,9 @@
 Revision history for JavaScript-XRay
 
+0.092   6/4/2006
+        Fix Synopsis example so it actually does something (and won't
+        throw an error)
+
 0.091   6/4/2006
         Few documentation tweaks, remove "Your" from the description
 
