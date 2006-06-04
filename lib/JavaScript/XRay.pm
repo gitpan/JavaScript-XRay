@@ -4,7 +4,7 @@ use strict;
 
 =head1 NAME
 
-JavaScript::XRay - See What Your JavaScript is Doing
+JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
@@ -12,7 +12,7 @@ Version 0.9
 
 =cut
 
-our $VERSION = '0.9';
+our $VERSION = '0.91';
 our $PACKAGE = __PACKAGE__;
 
 =head1 SYNOPSIS
@@ -20,10 +20,15 @@ our $PACKAGE = __PACKAGE__;
 I put the comments in for lazy folks like myself who cut and 
 page the Synopsis before they throughly read the pod.
 
+ #!/usr/bin/perl
+ use strict;
+ use warnings;
+ use JavaScript::XRay;
+ 
  # HTML page with a <body> tag and hopefully some JavaScript
  # if you're using this module :)
 
- $html_page = "<html><head></head><body></body></html>";
+ my $html_page = "<html><head></head><body></body></html>";
  
  # the 'alias' is the prefix which all your switches will be 
  # prefixed with and helps "scope" the injected JavaScript
@@ -71,13 +76,15 @@ page the Synopsis before they throughly read the pod.
  # you may want put your switch building inside this 
  # conditional as well and just check for your alias 
 
- if ( $switches->{$alias} == 1 ) {
+ if ( exists $switches->{$alias} ) {
      my $js_xray = JavaScript::XRay->new(
          alias    => $alias,
          switches => $switches,
      );
      $html_page = $js_xray->filter($html_page);
  }
+
+ # do somethng with the modified page...
 
 =head1 DESCRIPTION
 
@@ -283,6 +290,8 @@ sub new {
 =head1 METHODS
 
 =head2 filter
+
+Pass HTML in, get modified HTML out.
 
 =cut
 
@@ -689,8 +698,8 @@ sub _css {
 
 =head2 _init_switches
 
-Take alias prefixed switched passed in and strip off the alias
-and make them easier to call.
+Take alias prefixed switches passed in and strip off the alias
+and repackage them.
 
 =cut
 
