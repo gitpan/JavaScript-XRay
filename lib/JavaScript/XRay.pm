@@ -8,11 +8,11 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 0.93
+Version 0.94
 
 =cut
 
-our $VERSION = '0.93';
+our $VERSION = '0.94';
 our $PACKAGE = __PACKAGE__;
 
 =head1 SYNOPSIS
@@ -24,48 +24,48 @@ page the Synopsis before they throughly read the pod.
  use strict;
  use warnings;
  use JavaScript::XRay;
- 
+
  # HTML page with a <body> tag and hopefully some JavaScript
  # if you're using this module :)
- 
+
  my $html_page = do { local $/; <> };
- 
+
  # the 'alias' is the prefix which all your switches will be 
  # prefixed with and helps "scope" the injected JavaScript
  # variables and functions so they don't collide with 
  # anything in your page.
- 
+
  my $alias = 'jsxray';    # jsxray is the default
- 
+
  # switches is just a hash ref that could be build for 
  # incoming parameters on a query string or passed 
  # via options via a command line script
- 
+
  # In the future, hooks may be built for building the 
  # switches for popular frameworks.  The idea is that you
  # want to look through the incoming param list and pass
  # anything that matches your alias.  This interface isn't
  # the cleanest, but just wanted to make it generic.  It
  # can definately be improved...
-  
+
  # via CGI.pm
- 
+
  # my $q = CGI->new;
  # my $switches = { 
  #     map  { $_ => $q->param($_) }
  #     grep { /^$alias/ } $q->param
  # };
- 
+
  # via mod_perl
- 
+
  #  my $req = Apache::Request->new($r);
  #  my $switches = { 
  #    map { $_ => $req->param($_) } 
  #    grep { /^$alias/ } $req->param
  # };
- 
+
  # Catalyst
- 
+
  #  my $req = $c->request;
  #  my $switches = { 
  #    map { $_ => $req->param($_) } 
@@ -73,19 +73,19 @@ page the Synopsis before they throughly read the pod.
  # };
 
  # or just hard coded to get something to work
- 
+
  my $switches = { $alias => 1 };
- 
+
  # now we only want to filter if its turned on so we can 
  # you may want put your switch building inside this 
  # conditional as well and just check for your alias 
- 
+
  # ATTENTION - also if enable filtering in your 
  # production environment, maybe have special cookie 
  # that needs to be set as well in order to enable 
  # filtering. (so Joe Somebody or Ex-Employee can't 
  # turn it on)
- 
+
  if ( $switches->{$alias} == 1 ) {
      my $js_xray = JavaScript::XRay->new(
          alias    => $alias,
@@ -110,7 +110,7 @@ function tracing console into your out going page.
 
 =over 4
 
-=item * Injects a IFrame "log"
+=item * Injects an IFrame logging console
 
 It finds the body tag in the document and injects the IFrame just after it
 along with all the JavaScript to drive it.  It also provides you with a method
@@ -136,7 +136,7 @@ to the IFrame.
 
 You can manually B<skip> specific functions, choose to see B<only>
 functions you specify, or B<filter> functions matching a specified
-string. ( see L<SWITCHES> )
+string. ( see L</"Switches"> )
 
 =item * Provide execution counts
 
@@ -152,7 +152,7 @@ what's happening.
 
 =back
 
-=head1 SWITCHES
+=head2 Switches
 
 The module's initial design was for it to be used via a query string
 and the switches evolved from there.  (In other words, if this switch 
@@ -163,50 +163,55 @@ a custom alias, the urls with change accordingly.
 
 =over 4
 
-=item * uncomment
+=item * uncomment ( string1, string2, ... )
 
-Uncomment lines prefix with these strings (string1,string2)
-Helpful with injecting timing code, or more specific 
-debugging code.  You can deploy commented logging code to production
-and turn it on when your turn on filtering.  Extremly helpful when 
-diagnosing problems you can't reproduce in your development 
-environment.
+Uncomment lines prefix with these strings.  Helpful with injecting 
+timing code, or more specific debugging code.  You can deploy 
+commented logging code to production and turn it on when your 
+turn on filtering.  Extremly helpful when diagnosing problems you 
+can't reproduce in your development environment.
 
-    http://someurl/somepage?jsxray=1&jsxray_uncomment=DEBUG1,DEBUG2
+    http://someurl/somepage?jsxray=1&jsxray_uncomment=DEBUG1,DEBUG3
 
-will uncomment
+will turn this...
 
     //DEBUG1 jsxray("Hey this is debug1");
     //DEBUG2 jsxray("Hey this is debug2");
+    //DEBUG3 jsxray("Hey this is debug3");
+
+into this
+
+    jsxray("Hey this is debug1");
+    //DEBUG2 jsxray("Hey this is debug2");
+    jsxray("Hey this is debug3");
 
 =item * anon  (bool)
 
-Include filtering of anonymous functions. (bool)
+Include filtering of anonymous functions. ( bool )
 
     http://someurl/somepage?jsxray=1&jsxray_anon=1
 
-=item * no_exec_count
+=item * no_exec_count ( bool )
 
 Don't inject code that keeps track of how many times a function was called. 
-(bool)
 
     http://someurl/somepage?jsxray=1&jsxray_no_exec_count=1
 
-=item * only 
+=item * only ( function1, function2, ... )
 
 Only filter comma seperated list of functions (function1,function2,...)
 
     http://someurl/somepage?jsxray=1&jsxray_only=processData,writeTopage
 
-=item * skip
+=item * skip ( function1, function2, ... )
 
-Skip comma seperated list of functions (function1,function2,...)
+Skip comma seperated list of functions
 
     http://someurl/somepage?jsxray=1&jsxray_skip=formatNumber
 
-=item * skip
+=item * skip ( /^string/ )
 
-Only filter function that match string (/^string/)
+Only filter function that match string
 
     http://someurl/somepage?jsxray=1&jsxray_filter=ajax
 
