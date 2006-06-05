@@ -1,5 +1,10 @@
 Revision history for JavaScript-XRay
 
+0.093   6/4/2006
+        Add a catalyst switch example in the synopsis and a warning
+        about leaving it wide open in a production environment.  Also
+        method documentation cleanup.
+
 0.092   6/4/2006
         Fix Synopsis example so it actually does something (and won't
         throw an error)

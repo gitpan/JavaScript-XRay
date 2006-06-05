@@ -8,11 +8,11 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 0.9
+Version 0.93
 
 =cut
 
-our $VERSION = '0.92';
+our $VERSION = '0.93';
 our $PACKAGE = __PACKAGE__;
 
 =head1 SYNOPSIS
@@ -64,17 +64,27 @@ page the Synopsis before they throughly read the pod.
  #    grep { /^$alias/ } $req->param
  # };
  
+ # Catalyst
+ 
+ #  my $req = $c->request;
+ #  my $switches = { 
+ #    map { $_ => $req->param($_) } 
+ #    grep { /^$alias/ } $req->param
+ # };
+
  # or just hard coded to get something to work
  
  my $switches = { $alias => 1 };
  
- # or if you only one to see functions matching '/^ajax/'
- 
- # my $switches = { $alias => 1, $alias . "_filter" => 'ajax' };
- 
  # now we only want to filter if its turned on so we can 
  # you may want put your switch building inside this 
  # conditional as well and just check for your alias 
+ 
+ # ATTENTION - also if enable filtering in your 
+ # production environment, maybe have special cookie 
+ # that needs to be set as well in order to enable 
+ # filtering. (so Joe Somebody or Ex-Employee can't 
+ # turn it on)
  
  if ( $switches->{$alias} == 1 ) {
      my $js_xray = JavaScript::XRay->new(
@@ -236,7 +246,7 @@ our @SWITCH_KEYS = keys %SWITCHES;
 
 =head1 CONSTRUCTOR
 
-=head2 new
+=head2 JavaScript::XRay->new( %hash );
 
 Create a new instance with the following arguments
 
@@ -289,7 +299,7 @@ sub new {
 
 =head1 METHODS
 
-=head2 filter
+=head2 $jsxray->filter( $html );
 
 Pass HTML in, get modified HTML out.
 
