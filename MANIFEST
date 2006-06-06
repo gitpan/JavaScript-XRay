@@ -5,6 +5,7 @@ Makefile.PL
 README
 lib/JavaScript/XRay.pm
 t/00-load.t
+t/01-basic.t
 t/boilerplate.t
 t/pod-coverage.t
 t/pod.t

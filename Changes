@@ -1,25 +1,30 @@
 Revision history for JavaScript-XRay
 
+0.95    6/5/2006
+        * Bunch fixed typos and spelling errors fixed.
+        * Forgot to update the MANIFEST with the filename of
+          the new test file so its in there this time
+        
 0.94    6/5/2006
-        Bunch of documentation cleanups
-            Fix synopsis rendering with perldoc -t and regenerate README
-            Fix internal see L</"Switches"> links
-            Clarify uncomment switch with after example
-            Cleanup Switches section
-        First basic tests... It's a start :)
+        * Bunch of documentation cleanups
+          * Fix synopsis rendering with perldoc -t and regenerate README
+          * Fix internal see L</"Switches"> links
+          * Clarify uncomment switch with after example
+          * Cleanup Switches section
+        * First basic tests... It's a start :)
 
 0.93    6/4/2006
-        Add a catalyst switch example in the synopsis and a warning
-        about leaving it wide open in a production environment.  Also
-        method documentation cleanup.
+        * Add a catalyst switch example in the synopsis
+        * warning about leaving it wide open in a production environment.
+        * method documentation cleanup.
 
 0.92    6/4/2006
-        Fix Synopsis example so it actually does something (and won't
-        throw an error)
+        * Fix Synopsis example so it actually does something (and won't
+          throw an error)
 
 0.91    6/4/2006
-        Few documentation tweaks, remove "Your" from the description
+        * Few documentation tweaks, remove "Your" from the description
 
 0.9     6/4/2006
-        First version, released on an unsuspecting world.
+        * First version, released on an unsuspecting world.
 

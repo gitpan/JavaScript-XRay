@@ -8,17 +8,17 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 0.94
+Version 0.95
 
 =cut
 
-our $VERSION = '0.94';
+our $VERSION = '0.95';
 our $PACKAGE = __PACKAGE__;
 
 =head1 SYNOPSIS
 
 I put the comments in for lazy folks like myself who cut and 
-page the Synopsis before they throughly read the pod.
+page the Synopsis before they thoroughly read the pod.
 
  #!/usr/bin/perl
  use strict;
@@ -46,7 +46,7 @@ page the Synopsis before they throughly read the pod.
  # want to look through the incoming param list and pass
  # anything that matches your alias.  This interface isn't
  # the cleanest, but just wanted to make it generic.  It
- # can definately be improved...
+ # can definitely be improved...
 
  # via CGI.pm
 
@@ -120,7 +120,8 @@ along with all the JavaScript to drive it.  It also provides you with a method
 
 =item * Scans HTML for JavaScript functions
 
-For each function it finds it inserts inserts a call to this method which logs the function call along with the value of the function arguments.
+For each function it finds it inserts a call to this method which logs 
+the function call along with the value of the function arguments.
 
     function sum ( x, y ) {
 
@@ -129,8 +130,8 @@ becomes
     function sum ( x, y ) {
         jsxray( "sum( " + x + ", " + y + " )" );
 
-so now any call this this function and its arguments will get logged 
-to the IFrame.
+so now any call this function and its arguments will get logged to the 
+IFrame.
 
 =item * Switches to limit what you log
 
@@ -156,10 +157,10 @@ what's happening.
 
 The module's initial design was for it to be used via a query string
 and the switches evolved from there.  (In other words, if this switch 
-interface feels clunky, thats the reason why)
+interface feels clunky, that's the reason why)
 
 Also not the below examples use the alias 'jsxray' but if you use
-a custom alias, the urls with change accordingly.
+a custom alias, the URLs with change accordingly.
 
 =over 4
 
@@ -168,7 +169,7 @@ a custom alias, the urls with change accordingly.
 Uncomment lines prefix with these strings.  Helpful with injecting 
 timing code, or more specific debugging code.  You can deploy 
 commented logging code to production and turn it on when your 
-turn on filtering.  Extremly helpful when diagnosing problems you 
+turn on filtering.  Extremely helpful when diagnosing problems you 
 can't reproduce in your development environment.
 
     http://someurl/somepage?jsxray=1&jsxray_uncomment=DEBUG1,DEBUG3
@@ -187,7 +188,7 @@ into this
 
 =item * anon  (bool)
 
-Include filtering of anonymous functions. ( bool )
+Include filtering of anonymous functions.
 
     http://someurl/somepage?jsxray=1&jsxray_anon=1
 
@@ -199,13 +200,13 @@ Don't inject code that keeps track of how many times a function was called.
 
 =item * only ( function1, function2, ... )
 
-Only filter comma seperated list of functions (function1,function2,...)
+Only filter comma separated list of functions (function1,function2,...)
 
     http://someurl/somepage?jsxray=1&jsxray_only=processData,writeTopage
 
 =item * skip ( function1, function2, ... )
 
-Skip comma seperated list of functions
+Skip comma separated list of functions
 
     http://someurl/somepage?jsxray=1&jsxray_skip=formatNumber
 
@@ -259,14 +260,14 @@ Create a new instance with the following arguments
 
 =item * alias
 
-Think of this as a JavaScript namespace.  All injeted JavaScript fuctions 
-and varibles are prefixed with this B<alias> to avoid colliding with 
+Think of this as a JavaScript namespace.  All injeted JavaScript functions 
+and variables are prefixed with this B<alias> to avoid colliding with 
 any code that currently exists on your page.  It also is the prefix used for
 all the switches to toggle things on and off.
 
 =item * switches
 
-Hash reference containing switches to change filtering behavor.  See the 
+Hash reference containing switches to change filtering behavior.  See the 
 L</"Switches"> section for more details.
 
 =item * iframe_height
@@ -821,7 +822,7 @@ L<http://search.cpan.org/dist/JavaScript-XRay>
 
 =back
 
-=head1 ACKNOWLEDGEMENTS
+=head1 ACKNOWLEDGMENTS
 
 =over 4
 
@@ -832,8 +833,8 @@ Providing the JavaScript DOM logging code in order to do the reverse logging
 
 =item * Ronnie Paskin
 
-General hacking on the code, good feedbak, and for being a sounding board to
-work out issues.
+General hacking on the code, good feedback, and for being a sounding board 
+to work out issues.
 
 =item * Tony Fernandez
 
