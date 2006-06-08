@@ -1,6 +1,7 @@
 package JavaScript::XRay;
 use warnings;
 use strict;
+use Carp qw(croak);
 
 =head1 NAME
 
@@ -8,11 +9,11 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 0.95
+Version 0.96
 
 =cut
 
-our $VERSION = '0.95';
+our $VERSION = '0.96';
 our $PACKAGE = __PACKAGE__;
 
 =head1 SYNOPSIS
@@ -822,7 +823,7 @@ L<http://search.cpan.org/dist/JavaScript-XRay>
 
 =back
 
-=head1 ACKNOWLEDGMENTS
+=head1 ACKNOWLEDGEMENTS
 
 =over 4
 

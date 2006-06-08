@@ -2,7 +2,7 @@ NAME
     JavaScript::XRay - See What JavaScript is Doing
 
 VERSION
-    Version 0.95
+    Version 0.96
 
 SYNOPSIS
     I put the comments in for lazy folks like myself who cut and page the
@@ -93,8 +93,7 @@ DESCRIPTION
     tracing console into your out going page.
 
   Some of the things it does...
-    *   Injects an IFrame logging console
-
+    * Injects an IFrame logging console
         It finds the body tag in the document and injects the IFrame just
         after it along with all the JavaScript to drive it. It also provides
         you with a method (whatever you used as alias - defaulted to
@@ -102,8 +101,7 @@ DESCRIPTION
 
            jsxray("Hi there");
 
-    *   Scans HTML for JavaScript functions
-
+    * Scans HTML for JavaScript functions
         For each function it finds it inserts a call to this method which
         logs the function call along with the value of the function
         arguments.
@@ -118,20 +116,17 @@ DESCRIPTION
         so now any call this function and its arguments will get logged to
         the IFrame.
 
-    *   Switches to limit what you log
-
+    * Switches to limit what you log
         You can manually skip specific functions, choose to see only
         functions you specify, or filter functions matching a specified
         string. ( see "Switches" )
 
-    *   Provide execution counts
-
+    * Provide execution counts
         Provides a method to see how often your functions are being called.
         This can be helpful to target which functions to rewrite to increase
         performance.
 
-    *   Save the log for later.
-
+    * Save the log for later.
         You can cut and paste the IFrame to a text file to analyze later by
         hand or munge the results with perl. Extremely helpful in moments
         when you have a lot of code executing and your just trying to get a
@@ -145,8 +140,7 @@ DESCRIPTION
     Also not the below examples use the alias 'jsxray' but if you use a
     custom alias, the URLs with change accordingly.
 
-    *   uncomment ( string1, string2, ... )
-
+    * uncomment ( string1, string2, ... )
         Uncomment lines prefix with these strings. Helpful with injecting
         timing code, or more specific debugging code. You can deploy
         commented logging code to production and turn it on when your turn
@@ -167,34 +161,29 @@ DESCRIPTION
             //DEBUG2 jsxray("Hey this is debug2");
             jsxray("Hey this is debug3");
 
-    *   anon (bool)
-
+    * anon (bool)
         Include filtering of anonymous functions.
 
             http://someurl/somepage?jsxray=1&jsxray_anon=1
 
-    *   no_exec_count ( bool )
-
+    * no_exec_count ( bool )
         Don't inject code that keeps track of how many times a function was
         called.
 
             http://someurl/somepage?jsxray=1&jsxray_no_exec_count=1
 
-    *   only ( function1, function2, ... )
-
+    * only ( function1, function2, ... )
         Only filter comma separated list of functions
         (function1,function2,...)
 
             http://someurl/somepage?jsxray=1&jsxray_only=processData,writeTopage
 
-    *   skip ( function1, function2, ... )
-
+    * skip ( function1, function2, ... )
         Skip comma separated list of functions
 
             http://someurl/somepage?jsxray=1&jsxray_skip=formatNumber
 
-    *   skip ( /^string/ )
-
+    * skip ( /^string/ )
         Only filter function that match string
 
             http://someurl/somepage?jsxray=1&jsxray_filter=ajax
@@ -203,28 +192,23 @@ CONSTRUCTOR
   JavaScript::XRay->new( %hash );
     Create a new instance with the following arguments
 
-    *   alias
-
+    * alias
         Think of this as a JavaScript namespace. All injeted JavaScript
         functions and variables are prefixed with this alias to avoid
         colliding with any code that currently exists on your page. It also
         is the prefix used for all the switches to toggle things on and off.
 
-    *   switches
-
+    * switches
         Hash reference containing switches to change filtering behavior. See
         the "Switches" section for more details.
 
-    *   iframe_height
-
+    * iframe_height
         The height of your logging IFrame, defaults to 200 pixels.
 
-    *   css_inline
-
+    * css_inline
         Change the style of the logging IFrame via inline CSS.
 
-    *   css_external
-
+    * css_external
         Change the style of the logging IFrame via an external stylesheet.
 
 METHODS
@@ -254,28 +238,24 @@ AUTHOR
 TODO
     Some of the things that are still in the conceptional phase
 
-    *   Inlining external JavaScript files
-
+    * Inlining external JavaScript files
         The biggest short coming of this module is that fact that it doesn't
         process external JavaScript files :( I have a couple of ways to do
         this in mind but want not of them are elegant. I figured I just
         release the module first and see what ideas other folks and come up
         with a solution.
 
-    *   Personal proxy
-
+    * Personal proxy
         Include a personal proxy script with this module so you can filter
         ANY webpage you go to.
 
-    *   Command line filter
-
+    * Command line filter
         Include a command line script that will just filter HTML file from
         the command line. This way you just save a page with your browser
         and you can filter it if you want. ( excellent for reverse
         engineering)
 
-    *   Add a user interface to the console to control the switches
-
+    * Add a user interface to the console to control the switches
         Add a form to the console that will allow you to see the values of
         the switches and then resubmit the url to have the changes take
         affect.
@@ -294,35 +274,28 @@ SUPPORT
 
     You can also look for information at:
 
-    *   AnnoCPAN: Annotated CPAN documentation
-
+    * AnnoCPAN: Annotated CPAN documentation
         <http://annocpan.org/dist/JavaScript-XRay>
 
-    *   CPAN Ratings
-
+    * CPAN Ratings
         <http://cpanratings.perl.org/d/JavaScript-XRay>
 
-    *   RT: CPAN's request tracker
-
+    * RT: CPAN's request tracker
         <http://rt.cpan.org/NoAuth/Bugs.html?Dist=JavaScript-XRay>
 
-    *   Search CPAN
-
+    * Search CPAN
         <http://search.cpan.org/dist/JavaScript-XRay>
 
-ACKNOWLEDGMENTS
-    *   Senta Mcadoo
-
+ACKNOWLEDGEMENTS
+    * Senta Mcadoo
         Providing the JavaScript DOM logging code in order to do the reverse
         logging (solved the scrolling problem).
 
-    *   Ronnie Paskin
-
+    * Ronnie Paskin
         General hacking on the code, good feedback, and for being a sounding
         board to work out issues.
 
-    *   Tony Fernandez
-
+    * Tony Fernandez
         Giving me the green light to publish this on the CPAN.
 
 COPYRIGHT & LICENSE

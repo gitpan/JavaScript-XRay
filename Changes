@@ -1,5 +1,11 @@
 Revision history for JavaScript-XRay
 
+0.96    6/7/2006
+        * Fix spelling of Acknowledgements
+        * Now have 100% test coverage
+        * Include use Carp (had croak call without use Carp qw(croak)
+        * Included Carp as a required module
+
 0.95    6/5/2006
         * Bunch fixed typos and spelling errors fixed.
         * Forgot to update the MANIFEST with the filename of
