@@ -1,5 +1,16 @@
 Revision history for JavaScript-XRay
 
+0.97    6/15/2006
+        * Major restructuring of the code
+            * Refactored sub 'filter' into smaller functions
+            * use a regex to find functions instead of spliting lines
+            * Now looks for script blocks with 'src' attributes and will
+              only inline fully qualified ones with now (via LWP::Simple)
+              <script type="JavaScript" src="http://www.jbisbee.com/test.js">
+        * New depedancy on LWP::Simple
+        * New "INLINING EXTERNAL JAVASCRIPT" pod section
+        * Few more documentation tweaks
+
 0.96    6/7/2006
         * Fix spelling of Acknowledgements
         * Now have 100% test coverage

@@ -2,6 +2,7 @@ package JavaScript::XRay;
 use warnings;
 use strict;
 use Carp qw(croak);
+use LWP::Simple qw(get);
 
 =head1 NAME
 
@@ -9,11 +10,11 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 0.96
+Version 0.97
 
 =cut
 
-our $VERSION = '0.96';
+our $VERSION = '0.97';
 our $PACKAGE = __PACKAGE__;
 
 =head1 SYNOPSIS
@@ -114,8 +115,8 @@ function tracing console into your out going page.
 =item * Injects an IFrame logging console
 
 It finds the body tag in the document and injects the IFrame just after it
-along with all the JavaScript to drive it.  It also provides you with a method
-(whatever you used as alias - defaulted to jsxray).  
+along with all the JavaScript to drive it.  It also provides you with a 
+logging function with the same name as your alias (defaults to jsxray)
 
    jsxray("Hi there");
 
@@ -143,7 +144,12 @@ string. ( see L</"Switches"> )
 =item * Provide execution counts
 
 Provides a method to see how often your functions are being called.  This can
-be helpful to target which functions to rewrite to increase performance.
+be helpful to target which functions to refactor to increase performance.
+
+=item * Inlines external JavaScript files
+
+If external javascript files are referenced, they can be inlined so they'll
+be filtered as well.
 
 =item * Save the log for later.
 
@@ -312,6 +318,22 @@ Pass HTML in, get modified HTML out.
 
 =cut
 
+our $function_match = qr#
+    \G
+    (.+?)
+    (
+        function?
+        \s*
+        \w+?
+        \s*?
+        \(
+        .+?
+        \)?
+        \s*
+        \{
+    )
+#imosx;
+
 sub filter {
     my ( $self, $html ) = @_;
 
@@ -320,109 +342,238 @@ sub filter {
     my $use_ref  = ref $html;
     my $html_ref = $use_ref ? $html : \$html;
 
-    my $ANON                = $switch->{anon};
-    my %ONLY_FUNCTION       = map { $_ => 1 } split( /\,/, $switch->{only} );
-    my %SKIP_FUNCTION       = map { $_ => 1 } split( /\,/, $switch->{skip} );
-    my $ONLY_FUNCTIONS_BOOL = scalar keys %ONLY_FUNCTION;
-    my $FUNCTION_FILTER     = quotemeta $switch->{filter} || "";
-
-    my %UNCOMMENT_PREFIX
-        = map { quotemeta($_) => 1 } split( /\,/, $switch->{uncomment} );
-
     $self->_warn( "Tracing anonymous subroutines" )
-        if $ANON && !$ONLY_FUNCTIONS_BOOL;
+        if $switch->{anon} && !$switch->{only};
 
     $self->_warn( "Only tracing functions exactly matching: $switch->{only}" )
-        if $ONLY_FUNCTIONS_BOOL;
+        if $switch->{only};
 
-    $self->_warn( "Skipping functions: $switch->{skip}" )
-        if keys %SKIP_FUNCTION;
+    $self->_warn( "Skipping functions: $switch->{skip}" ) if $switch->{skip};
 
-    $self->_warn( "Tracing matching functions: /^$FUNCTION_FILTER/" )
-        if $FUNCTION_FILTER;
+    $self->_warn( "Tracing matching functions: /^$switch->{filter}/" )
+        if $switch->{filter};
 
-    for my $uncomment ( keys %UNCOMMENT_PREFIX ) {
-        $self->_warn( "Uncommenting lines beginning with: //$uncomment" );
-    }
+    my $new_html = $$html_ref;
 
-    my $work_html = $$html_ref;
-    my @new_lines = ();
-    my @lines     = split( /\n/, $work_html );
-    my $num       = @lines;
+    $new_html = $self->_filter($new_html);
+    $new_html = $self->_inline_external_javascript($new_html);
 
-    $self->_warn( "Filtering $num lines of HTML" );
+    $self->_uncomment( \$new_html ) if $switch->{uncomment};
+    $self->_inject_console( \$new_html );
+    $self->_inject_js_css( \$new_html );
 
-    my $line_num = 1;
-
-    LINE:
-    for my $line (@lines) {
-
-        for my $uncomment ( keys %UNCOMMENT_PREFIX ) {
-            my $uncomment_count = $line =~ s/\/\/$uncomment//g;
-            $self->_warn("$PACKAGE->filter uncommented line $line_num")
-                if $uncomment_count;
-        }
-
-        FUNCTION:
-        for my $function ( $line =~ /(function?\s*\w+?\s*?\(.+?\)?\s*\{)?/g ) {
-            next unless $function;
-
-            my ($name) = $function =~ /function\s*(\w+?)?\s*?\(/g;
-            $name = "" unless $name;  # define it to supress warnings
-
-            # don't want any recursive JavaScript loops
-            croak( "found function '$name' on line $line_num, functions may "
-                    . "not match alias: '$alias'" )
-                if $name eq $alias;
-
-            my ($args) = $function =~ /function\s*$name?\s*?\((.+?)\)/g;
-            $name = "ANON" unless $name;
-
-            $self->{js_log_init} .= "${alias}_exec_count['$name'] = 0;\n"
-                unless $switch->{no_exec_count};
-
-            # skip anon functions if ALIAS_skip_anon
-            next FUNCTION if $name eq "ANON" && !$ANON;
-            next FUNCTION if $ONLY_FUNCTIONS_BOOL && !$ONLY_FUNCTION{$name};
-            next FUNCTION if $SKIP_FUNCTION{$name};
-            next FUNCTION if $FUNCTION_FILTER && $name !~ /^$FUNCTION_FILTER/;
-
-            $self->_warn( "Found function '$name' at line $line_num" );
-
-            # build out function arguments
-            my $q_args = "";
-            if ($args) {
-                my @arg_list = split( /\,/, $args );
-                $q_args = "'+" . join( "+', '+", @arg_list ) . "+'";
-            }
-
-            # make everything safe and insert the trace call
-            my $q_function = quotemeta $function;
-            my $q_function_replace = "";
-            $q_function_replace .= $function; 
-            $q_function_replace .= "$alias('$name( $q_args )');";
-            $q_function_replace .= "${alias}_exec_count['$name']++;"
-                unless $switch->{no_exec_count};
-            $line =~ s/$q_function/$q_function_replace/;
-        }
-        $line_num++;
-        push @new_lines, $line;
-    }
-
-    $work_html = join( "\n", @new_lines );
-    $self->_inject_console( \$work_html );
-    $self->_inject_js_css( \$work_html );
-
-    return $use_ref ? \$work_html : $work_html;
+    return $use_ref ? \$new_html : $new_html;
 }
 
-=head1 INTERNAL METHODS
+sub _filter {
+    my ( $self, $work_html ) = @_;
 
-=head2 _inject_js_css
+    my ( $alias, $switch ) = ( $self->{alias}, $self->{switches} );
 
-Hook to inject the alias prefixed JavaScript and CSS into the page.
+    my $new_html = "";
+    while ( $work_html =~ /$function_match/cg ) {
+
+        # build output page from input page
+        $new_html .= $1;
+
+        # find the function name
+        my $function .= $2;
+        my ($name) = $function =~ /function\s*(\w+?)?\s*?\(/g;
+        $name = "" unless $name;  # define it to supress warnings
+
+        # don't want any recursive JavaScript loops
+        croak( "found function '$name', functions may "
+                . "not match alias: '$alias'" )
+            if $name eq $alias;
+
+        # find the function arguments
+        my ($args) = $function =~ /function\s*$name?\s*?\((.+?)\)/g;
+        $name = "ANON" unless $name;
+
+        unless ( $switch->{no_exec_count} ) {
+            $self->{js_log_init} .= "${alias}_exec_count['$name'] = 0;\n";
+            $function            .= "\n    ${alias}_exec_count['$name']++;";
+        }
+
+        my %only_function = map { $_ => 1 } split( /\,/, $switch->{only} );
+        my %skip_function = map { $_ => 1 } split( /\,/, $switch->{skip} );
+        my $function_filter = quotemeta $switch->{filter} || "";
+
+        # skip filter
+        #   if anon and not filtering anon functions
+        #   if switch 'only' used and function doesn't match
+        #   if switch 'skip' used and function matches
+        #   if switch 'filter' used and function doesn't match
+        if (   ( $name eq "ANON" && !$switch->{anon} )
+            || ( $switch->{only}   && !$only_function{$name} )
+            || ( $switch->{skip}   && $skip_function{$name} )
+            || ( $switch->{filter} && $name !~ /^$function_filter/ ) )
+        {
+            $new_html .= $function;
+        }
+        else {
+            $self->_warn("Found function '$name'");
+
+            # build out function arguments - this is the cool part
+            # you also get to see the value of arguments passed to the 
+            # function, _extremely_ handy
+            my $filtered_args = "";
+            if ($args) {
+                my @arg_list = split( /\,/, $args );
+                $filtered_args = "'+" . join( "+', '+", @arg_list ) . "+'";
+            }
+
+            # insert the log call
+            $new_html
+                .= $function . "\n    $alias('$name( $filtered_args )');";
+        }
+    }
+
+    if ( $work_html =~ /\G(.*)/cgs ) {
+        $new_html .= $1;
+    }
+
+    return $new_html;
+}
+
+# match html and including script block
+our $script_block_match = qr#
+    \G
+    (.*?)
+    (
+        <script
+        .*?
+        </script>
+    )
+#imosx;
+
+# get script block attributes and content
+our $external_js_match = qr#
+    <script
+    (.*?)
+    \s*?>
+    (.*?)
+    <\/script>
+#imosx;
+
+# pull out name value pairs or special bool attribute 'defer'
+our $script_attrs_match= qr#
+    \G
+    \s*
+    (?: (defer) | 
+        (.+?)
+        \s*
+        \=
+        \s*
+        (?: [\"\'](.+?)[\"\'] | (\w+) )
+    )
+#imosx;
+
+=head1 INLINING EXTERNAL JAVASCRIPT
+
+One of the short comings of this module is that many people put their 
+javascript in seperate file and reference them via the src attribute
+
+    <!-- inlining currently works via LWP::Simple -->
+    <script type="JavaScript"
+    src="http://www.jbisbee.com/js/test.js"></script>
+
+    <!-- inlining doesn't yet work, but will soon -->
+    <script type="JavaScript" src="/js/test.js"></script>
+
+    <!-- inlining doesn't yet work, but will soon -->
+    <script type="JavaScript" src="test.js"></script>
+
+I have all the code in place to inline the src attribute, but only have the
+src =~ /^http/ handler working now.  Still working out the details on how to
+handle inlining the others.
 
 =cut
+
+sub _inline_external_javascript {
+    my ( $self, $work_html ) = @_;
+
+    my $new_html = "";
+
+    # look through the HTML for script blocks
+    while ( $work_html =~ /$script_block_match/cg ) {
+
+        $new_html .= $1;
+        my $script_block = $2;
+
+        # pull out both script attributes and inner script
+        while ( $script_block =~ /$external_js_match/cg ) {
+            my ( $script_attrs, $inner_script ) = ( $1, $2 );
+            $script_attrs =~ s/\s*\=\s*/\=/g;    # clean up white space
+
+            my %attrs = ();
+            while ( $script_attrs =~ /$script_attrs_match/cg ) {
+                my ( $defer, $name, $value ) = ( $1, $2, $3 || $4 );
+                $attrs{$name} = $defer ? 1 : $value;
+            }
+
+            if ( keys %attrs && $attrs{src} ) {
+                my @attrs = map {
+                    $_ eq "defer" ? $_ : "$_=\"$attrs{$_}\"";
+                } grep { $_ ne "src" } keys %attrs;
+
+                my $js = $self->_get_external_javascript($attrs{src});
+
+                $inner_script = $js;
+
+                my $inline_javascript = "<script "
+                    . join( ' ', @attrs ) . ">\n"
+                    . $inner_script
+                    . "\n</script>";
+
+                $new_html .= "<!-- inline $attrs{src} -->\n";
+                $new_html .= $inline_javascript;
+
+            }
+            else {
+                $new_html .= $script_block;
+            }
+        }
+    }
+
+    if ( $work_html =~ /\G(.*)/cgs ) {
+        $new_html .= $1;
+    }
+
+    return $new_html;
+}
+
+sub _get_external_javascript {
+    my ( $self, $src ) = @_;
+    my $js = "";
+    
+    if ( $src =~ /^http/ ) {
+        $js = get( $src );
+        $js = $self->_filter($js);
+    }
+    else {
+        # still a work in progress
+    }
+
+    return $js;
+}
+
+sub _uncomment {
+    my ( $self, $html_ref ) = @_;
+    my $switch = $self->{switches};
+
+    # uncomment nessesary tags
+    my @uncomment_strings
+        = map { quotemeta($_) } split( /\,/, $switch->{uncomment} );
+    for my $uncomment (@uncomment_strings) {
+        my $uncomment_count = $$html_ref =~ s/\/\/$uncomment//gs;
+        if ($uncomment_count) {
+            my $label = $uncomment_count > 1 ? "instances" : "instance";
+            $self->_warn( "$PACKAGE->filter uncommented $uncomment: "
+                    . "Found $uncomment_count $label" );
+        }
+    }
+}
 
 sub _inject_js_css {
     my ( $self, $html_ref ) = @_;
@@ -577,12 +728,6 @@ sub _inject_js_css {
     $$html_ref =~ s/(<head.*?>)/$1$js_css/is;
 }
 
-=head2 _inject_console
-
-Hook to inject HTML and the IFrame into the page.
-
-=cut
-
 sub _inject_console {
     my ( $self, $html_ref ) = @_;
 
@@ -590,7 +735,7 @@ sub _inject_console {
 
     my $iframe .= qq|
     <div class='${alias}_buttons' id='${alias}_buttons'>
-    <span class="${alias}_version">$PACKAGE v$VERSION</span>
+    <span class="${alias}_version"><a href="http://search.cpan.org/~jbisbee/JavaScript-XRay/" target="_blank">$PACKAGE</a> v$VERSION</span>
     <input type="button" value="Stop Logging" id="${alias}_logging_button" 
         onClick="${alias}_toggle_logging()" class="${alias}_button">
     <input type="button" value="Show Info" id="${alias}_info_button" 
@@ -634,12 +779,6 @@ sub _inject_console {
 
     $$html_ref =~ s/(<body.*?>)/$1$iframe/is;
 }
-
-=head2 _css
-
-Hook to inject alias prefixed CSS into the iframe and page.
-
-=cut
 
 sub _css {
     my ($self, $escape_bool) = @_;
@@ -713,13 +852,6 @@ sub _css {
     return $css;
 }
 
-=head2 _init_switches
-
-Take alias prefixed switches passed in and strip off the alias
-and repackage them.
-
-=cut
-
 sub _init_switches {
     my ( $raw_switch, $alias ) = @_;
 
@@ -739,16 +871,10 @@ sub _init_switches {
     return $switch;
 }
 
-=head2 _warn
-
-Hook to warn to the JavaScript IFrame log.
-
-=cut
-
 sub _warn {
     my ( $self, $msg ) = @_;
-
     my $alias = $self->{alias};
+    #warn "[$alias] $msg\n";
     $self->{js_log} .= qq|$alias("${PACKAGE}-&gt;filter $msg");\n|;
 }
 
@@ -762,23 +888,16 @@ Some of the things that are still in the conceptional phase
 
 =over 4
 
-=item * Inlining external JavaScript files
-
-The biggest short coming of this module is that fact that it doesn't process
-external JavaScript files :(  I have a couple of ways to do this in mind
-but want not of them are elegant.  I figured I just release the module first
-and see what ideas other folks and come up with a solution.
-
 =item * Personal proxy
 
 Include a personal proxy script with this module so you can filter 
 ANY webpage you go to.
 
-=item * Command line filter
+=item * Command line program
 
-Include a command line script that will just filter HTML file from the 
-command line.  This way you just save a page with your browser and you 
-can filter it if you want.  ( excellent for reverse engineering)
+Include a script that will just filter HTML file from the command line.  
+This way you just save a page with your browser and you can filter it 
+if you want.  ( excellent for reverse engineering)
 
 =item * Add a user interface to the console to control the switches
 

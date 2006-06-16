@@ -2,7 +2,7 @@ NAME
     JavaScript::XRay - See What JavaScript is Doing
 
 VERSION
-    Version 0.96
+    Version 0.97
 
 SYNOPSIS
     I put the comments in for lazy folks like myself who cut and page the
@@ -96,8 +96,8 @@ DESCRIPTION
     * Injects an IFrame logging console
         It finds the body tag in the document and injects the IFrame just
         after it along with all the JavaScript to drive it. It also provides
-        you with a method (whatever you used as alias - defaulted to
-        jsxray).
+        you with a logging function with the same name as your alias
+        (defaults to jsxray)
 
            jsxray("Hi there");
 
@@ -123,8 +123,12 @@ DESCRIPTION
 
     * Provide execution counts
         Provides a method to see how often your functions are being called.
-        This can be helpful to target which functions to rewrite to increase
-        performance.
+        This can be helpful to target which functions to refactor to
+        increase performance.
+
+    * Inlines external JavaScript files
+        If external javascript files are referenced, they can be inlined so
+        they'll be filtered as well.
 
     * Save the log for later.
         You can cut and paste the IFrame to a text file to analyze later by
@@ -215,22 +219,23 @@ METHODS
   $jsxray->filter( $html );
     Pass HTML in, get modified HTML out.
 
-INTERNAL METHODS
-  _inject_js_css
-    Hook to inject the alias prefixed JavaScript and CSS into the page.
+INLINING EXTERNAL JAVASCRIPT
+    One of the short comings of this module is that many people put their
+    javascript in seperate file and reference them via the src attribute
 
-  _inject_console
-    Hook to inject HTML and the IFrame into the page.
+        <!-- inlining currently works via LWP::Simple -->
+        <script type="JavaScript"
+        src="http://www.jbisbee.com/js/test.js"></script>
 
-  _css
-    Hook to inject alias prefixed CSS into the iframe and page.
+        <!-- inlining doesn't yet work, but will soon -->
+        <script type="JavaScript" src="/js/test.js"></script>
 
-  _init_switches
-    Take alias prefixed switches passed in and strip off the alias and
-    repackage them.
+        <!-- inlining doesn't yet work, but will soon -->
+        <script type="JavaScript" src="test.js"></script>
 
-  _warn
-    Hook to warn to the JavaScript IFrame log.
+    I have all the code in place to inline the src attribute, but only have
+    the src =~ /^http/ handler working now. Still working out the details on
+    how to handle inlining the others.
 
 AUTHOR
     Jeff Bisbee, "<jbisbee at cpan.org>"
@@ -238,22 +243,14 @@ AUTHOR
 TODO
     Some of the things that are still in the conceptional phase
 
-    * Inlining external JavaScript files
-        The biggest short coming of this module is that fact that it doesn't
-        process external JavaScript files :( I have a couple of ways to do
-        this in mind but want not of them are elegant. I figured I just
-        release the module first and see what ideas other folks and come up
-        with a solution.
-
     * Personal proxy
         Include a personal proxy script with this module so you can filter
         ANY webpage you go to.
 
-    * Command line filter
-        Include a command line script that will just filter HTML file from
-        the command line. This way you just save a page with your browser
-        and you can filter it if you want. ( excellent for reverse
-        engineering)
+    * Command line program
+        Include a script that will just filter HTML file from the command
+        line. This way you just save a page with your browser and you can
+        filter it if you want. ( excellent for reverse engineering)
 
     * Add a user interface to the console to control the switches
         Add a form to the console that will allow you to see the values of

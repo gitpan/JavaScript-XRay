@@ -9,9 +9,10 @@ WriteMakefile(
     ABSTRACT_FROM       => 'lib/JavaScript/XRay.pm',
     PL_FILES            => {},
     PREREQ_PM => {
-        'Test::More' => 0,
-        'Carp'       => 0,
-    },
+        'Test::More'  => 0,
+        'Carp'        => 0,
+        'LWP::Simple' => 0,
+        },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'JavaScript-XRay-*' },
 );
