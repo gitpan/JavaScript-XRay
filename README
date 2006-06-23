@@ -2,87 +2,33 @@ NAME
     JavaScript::XRay - See What JavaScript is Doing
 
 VERSION
-    Version 0.97
+    Version 0.99_1
 
 SYNOPSIS
-    I put the comments in for lazy folks like myself who cut and page the
-    Synopsis before they thoroughly read the pod.
-
      #!/usr/bin/perl
      use strict;
      use warnings;
      use JavaScript::XRay;
 
-     # HTML page with a <body> tag and hopefully some JavaScript
-     # if you're using this module :)
-
+     # HTML page with a <head> and <body> tag and some javascript functions
      my $html_page = do { local $/; <> };
 
-     # the 'alias' is the prefix which all your switches will be 
-     # prefixed with and helps "scope" the injected JavaScript
-     # variables and functions so they don't collide with 
-     # anything in your page.
+     # create a new instance
+     my $jsxray = JavaScript::XRay->new();
 
-     my $alias = 'jsxray';    # jsxray is the default
+     # to inline/filter external javascript files you'll need 'abs_uri'
+     # my $jsxray = JavaScript::XRay->new( 
+     #     abs_uri => $abs_url_or_local_file_path
+     # );
 
-     # switches is just a hash ref that could be build for 
-     # incoming parameters on a query string or passed 
-     # via options via a command line script
+     # use switches to change filtering behavior
+     # $jsxray->switches( only => 'onData' );
 
-     # In the future, hooks may be built for building the 
-     # switches for popular frameworks.  The idea is that you
-     # want to look through the incoming param list and pass
-     # anything that matches your alias.  This interface isn't
-     # the cleanest, but just wanted to make it generic.  It
-     # can definitely be improved...
+     # use inlining to inline/filter external javascript files
+     # $jsxray->inline_methods( 'dir1', 'dir2', \&callback, 'HTTP_GET' );
 
-     # via CGI.pm
-
-     # my $q = CGI->new;
-     # my $switches = { 
-     #     map  { $_ => $q->param($_) }
-     #     grep { /^$alias/ } $q->param
-     # };
-
-     # via mod_perl
-
-     #  my $req = Apache::Request->new($r);
-     #  my $switches = { 
-     #    map { $_ => $req->param($_) } 
-     #    grep { /^$alias/ } $req->param
-     # };
-
-     # Catalyst
-
-     #  my $req = $c->request;
-     #  my $switches = { 
-     #    map { $_ => $req->param($_) } 
-     #    grep { /^$alias/ } $req->param
-     # };
-
-     # or just hard coded to get something to work
-
-     my $switches = { $alias => 1 };
-
-     # now we only want to filter if its turned on so we can 
-     # you may want put your switch building inside this 
-     # conditional as well and just check for your alias 
-
-     # ATTENTION - also if enable filtering in your 
-     # production environment, maybe have special cookie 
-     # that needs to be set as well in order to enable 
-     # filtering. (so Joe Somebody or Ex-Employee can't 
-     # turn it on)
-
-     if ( $switches->{$alias} == 1 ) {
-         my $js_xray = JavaScript::XRay->new(
-             alias    => $alias,
-             switches => $switches,
-         );
-         $html_page = $js_xray->filter($html_page);
-     }
-
-     print $html_page;
+     # filter page
+     print $js_xray->filter($html_page);
 
 DESCRIPTION
     JavaScript::XRay is an HTML source filter. It was developed as a tool to
@@ -118,8 +64,8 @@ DESCRIPTION
 
     * Switches to limit what you log
         You can manually skip specific functions, choose to see only
-        functions you specify, or filter functions matching a specified
-        string. ( see "Switches" )
+        functions you specify, or match functions matching a specified
+        string. ( see the switchs methods )
 
     * Provide execution counts
         Provides a method to see how often your functions are being called.
@@ -130,19 +76,63 @@ DESCRIPTION
         If external javascript files are referenced, they can be inlined so
         they'll be filtered as well.
 
+    * Command line script 'jsxray'
+        Use the command line script 'jsxray' to save and filter local HTML
+        files to see how things work. Think reverse engineering. :)
+
     * Save the log for later.
         You can cut and paste the IFrame to a text file to analyze later by
         hand or munge the results with perl. Extremely helpful in moments
         when you have a lot of code executing and your just trying to get a
         handle on what's happening.
 
-  Switches
-    The module's initial design was for it to be used via a query string and
-    the switches evolved from there. (In other words, if this switch
-    interface feels clunky, that's the reason why)
+CONSTRUCTOR
+  JavaScript::XRay->new( %hash );
+    Create a new instance with the following arguments
 
-    Also not the below examples use the alias 'jsxray' but if you use a
-    custom alias, the URLs with change accordingly.
+    * alias
+        Think of this as a JavaScript namespace. All injeted JavaScript
+        functions and variables are prefixed with this alias to avoid
+        colliding with any code that currently exists on your page. It also
+        is the prefix used for all the switches to toggle things on and off.
+
+    * switches
+        Hash reference containing switches to change filtering behavior.
+        Actually just dereferences the hash and passes it onto the
+        'switches' method.
+
+    * abs_uri
+        Used to help find and filter external javascript files. It can be
+        the absolute URL of the requested file via a webserver or the path
+        of the file you're filtering from the command line.
+
+    * iframe_height
+        The height of your logging IFrame, defaults to 200 pixels.
+
+    * css_inline
+        Change the style of the logging IFrame via inline CSS.
+
+    * css_external
+        Change the style of the logging IFrame via an external stylesheet.
+
+    * verbose
+        Turn on verbose output (bool)
+
+METHODS
+  $jsxray->switches( %switches )
+    Switches control the behavior of which is going to be filtered and
+    provide the ability to uncomment debugging code on the fly.
+
+    * all (bool)
+        Turn on filtering of all functions. This is the default behavior.
+
+            all => 1
+
+    * none (bool)
+        Turn off filtering of functions. Helpful in combination with
+        uncomment switch.
+
+            none => 1
 
     * uncomment ( string1, string2, ... )
         Uncomment lines prefix with these strings. Helpful with injecting
@@ -151,7 +141,8 @@ DESCRIPTION
         on filtering. Extremely helpful when diagnosing problems you can't
         reproduce in your development environment.
 
-            http://someurl/somepage?jsxray=1&jsxray_uncomment=DEBUG1,DEBUG3
+            uncomment => "DEBUG1,DEBUG3"
+            uncomment => [ qw( DEBUG1 DEBUG3 ) ]
 
         will turn this...
 
@@ -168,74 +159,60 @@ DESCRIPTION
     * anon (bool)
         Include filtering of anonymous functions.
 
-            http://someurl/somepage?jsxray=1&jsxray_anon=1
+            anon => 1
 
     * no_exec_count ( bool )
         Don't inject code that keeps track of how many times a function was
         called.
 
-            http://someurl/somepage?jsxray=1&jsxray_no_exec_count=1
+            no_exec_count => 1
 
     * only ( function1, function2, ... )
         Only filter comma separated list of functions
         (function1,function2,...)
 
-            http://someurl/somepage?jsxray=1&jsxray_only=processData,writeTopage
+            only => "processData,writeToPage"
+            only => [ qw( processData writeToPage ) ]
 
     * skip ( function1, function2, ... )
         Skip comma separated list of functions
 
-            http://someurl/somepage?jsxray=1&jsxray_skip=formatNumber
+            skip => "formatNumber,onData"
+            skip => [ qw( formatNumber onData ) ]
 
-    * skip ( /^string/ )
-        Only filter function that match string
+    * match ( /^string/ )
+        Only filter functions that match string
 
-            http://someurl/somepage?jsxray=1&jsxray_filter=ajax
+            match => 'string'           # will result in qr/^string/
+            match => qr/whatever/
 
-CONSTRUCTOR
-  JavaScript::XRay->new( %hash );
-    Create a new instance with the following arguments
+  $jsxray->inline_methods( @methods );
+    WARNING THIS FUNCTIONALITY IS EXPERIMENTAL AND THE INTERFACE MAY CHANGE
 
-    * alias
-        Think of this as a JavaScript namespace. All injeted JavaScript
-        functions and variables are prefixed with this alias to avoid
-        colliding with any code that currently exists on your page. It also
-        is the prefix used for all the switches to toggle things on and off.
+    Take external javascript blocks (use src attribute) and get the
+    javascript, filter it, and inline the code. There are currently three
+    supported methods to do this.
 
-    * switches
-        Hash reference containing switches to change filtering behavior. See
-        the "Switches" section for more details.
+    * HTTP_GET (default)
+        Special string that represents using LWP::Simple to attempt to fetch
+        external javascript. If the src attribute isn't absolute, then
+        you'll need to pass the 'abs_uri' in when you create your instance.
 
-    * iframe_height
-        The height of your logging IFrame, defaults to 200 pixels.
+    * File Directory
+        Base file path to use with the src attribute to load the javascript
+        off disk. From a webserver, you'd probably include the web root and
+        from the commandline, you'd use the path of the file you're
+        filtering.
 
-    * css_inline
-        Change the style of the logging IFrame via inline CSS.
+    * Code Reference
+        The arguments to the code reference are the src attribute from the
+        javascript attribute and the code block must return the coresponding
+        code.
 
-    * css_external
-        Change the style of the logging IFrame via an external stylesheet.
+            $javascript_code = &$code_ref( $src_attr, $abs_uri );
 
-METHODS
   $jsxray->filter( $html );
     Pass HTML in, get modified HTML out.
-
-INLINING EXTERNAL JAVASCRIPT
-    One of the short comings of this module is that many people put their
-    javascript in seperate file and reference them via the src attribute
-
-        <!-- inlining currently works via LWP::Simple -->
-        <script type="JavaScript"
-        src="http://www.jbisbee.com/js/test.js"></script>
-
-        <!-- inlining doesn't yet work, but will soon -->
-        <script type="JavaScript" src="/js/test.js"></script>
-
-        <!-- inlining doesn't yet work, but will soon -->
-        <script type="JavaScript" src="test.js"></script>
-
-    I have all the code in place to inline the src attribute, but only have
-    the src =~ /^http/ handler working now. Still working out the details on
-    how to handle inlining the others.
 
 AUTHOR
     Jeff Bisbee, "<jbisbee at cpan.org>"
@@ -246,11 +223,6 @@ TODO
     * Personal proxy
         Include a personal proxy script with this module so you can filter
         ANY webpage you go to.
-
-    * Command line program
-        Include a script that will just filter HTML file from the command
-        line. This way you just save a page with your browser and you can
-        filter it if you want. ( excellent for reverse engineering)
 
     * Add a user interface to the console to control the switches
         Add a form to the console that will allow you to see the values of

@@ -1,5 +1,27 @@
 Revision history for JavaScript-XRay
 
+0.99_1  6/22/2006
+        * Wanted to get this code out there before I write more tests.
+        * Cleaned up the whole switches setting interface to make things a 
+          bit more clear.
+        * Fixed a bug where javascript was attempting to log before the DOM 
+          was ready (couldn't find the logging IFrame yet).  Setup a queue
+          to log messages until IFrame was found.
+        * Streamlined the documentation.
+        * New 'abs_uri' attribute to aid in inlining relative src javascript
+          files.
+        * Now handles both both relative and absolute URI (http and files)
+          to inline external javascript
+        * New command line script 'jsxray' to filter HTML on your local 
+          disk (ie save a page and filter it to see how it works)
+        * New verbose attribute so you can see whats going on.
+        * Additional required modules
+            * URI
+            * Pod::Usage
+            * Getopt::Long
+            * File::Spec::Functions
+            * File::Basename
+
 0.97    6/15/2006
         * Major restructuring of the code
             * Refactored sub 'filter' into smaller functions
