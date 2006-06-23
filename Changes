@@ -1,5 +1,8 @@
 Revision history for JavaScript-XRay
 
+0.99_3  6/24/2006
+        * Don't insert newlines when adding javascript code.
+
 0.99_3  6/23/2006
         * Fixed broken code in jsxray.  Method call should have been 
           'inline_methods' and not 'set_inline_methods'

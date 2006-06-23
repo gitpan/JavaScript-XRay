@@ -11,11 +11,11 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 0.99_3
+Version 0.99_4
 
 =cut
 
-our $VERSION = '0.99_3';
+our $VERSION = '0.99_4';
 our $PACKAGE = __PACKAGE__;
 
 =head1 SYNOPSIS
@@ -479,7 +479,7 @@ sub _filter {
             || ( $name eq "ANON" && !$switch->{anon} ) )
         {
             $self->{js_log_init} .= "${alias}_exec_count['$name'] = 0;\n";
-            $function            .= "\n    ${alias}_exec_count['$name']++;";
+            $function            .= "${alias}_exec_count['$name']++;";
         }
 
         my %only_function = $switch->{only}
@@ -526,7 +526,7 @@ sub _filter {
 
             # insert the log call
             $new_html
-                .= $function . "\n    $alias('$name( $filtered_args )');";
+                .= $function . "$alias('$name( $filtered_args )');";
         }
     }
 
