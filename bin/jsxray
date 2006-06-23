@@ -62,7 +62,7 @@ for my $file ( @ARGV ) {
     );
 
     my $dir = (splitpath($abs_uri))[1];
-    $jsxray->set_inline_methods($dir, "HTTP_GET");
+    $jsxray->inline_methods($dir, "HTTP_GET");
 
     # build new filename
     my ($name,$path) = fileparse($abs_uri); 

@@ -11,11 +11,11 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 0.99_1
+Version 0.99_3
 
 =cut
 
-our $VERSION = '0.99_2';
+our $VERSION = '0.99_3';
 our $PACKAGE = __PACKAGE__;
 
 =head1 SYNOPSIS

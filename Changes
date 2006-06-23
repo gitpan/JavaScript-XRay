@@ -1,5 +1,10 @@
 Revision history for JavaScript-XRay
 
+0.99_3  6/23/2006
+        * Fixed broken code in jsxray.  Method call should have been 
+          'inline_methods' and not 'set_inline_methods'
+        * Fix documentation of jsxay to change switch 'filter' to 'match'
+
 0.99_2  6/23/2006
         * Added EXED_FILES => [ 'bin/jsxray' ] to the Makefile.PL to install
           jsxray.
