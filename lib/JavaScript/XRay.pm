@@ -15,7 +15,7 @@ Version 0.99_1
 
 =cut
 
-our $VERSION = '0.99_1';
+our $VERSION = '0.99_2';
 our $PACKAGE = __PACKAGE__;
 
 =head1 SYNOPSIS

@@ -8,7 +8,7 @@ use Pod::Usage qw(pod2usage);
 use File::Spec::Functions qw(rel2abs splitpath);
 use File::Basename qw(fileparse);
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 my ( $verbose, $alias, $iframe_height, $css_external );
 my ( $all, $none, $anon, @skip, @only, @uncomment, $no_exec_count, $match );
 
@@ -115,7 +115,7 @@ Options:
     --skip           Skip filtering of these functions
     --uncomment      Uncomment these 
     --no-exec-count  Don't keep track of execution counts
-    --filter         Filter
+    --match          Filter functions that match string
 
 Default options may be set by specifying the JSXRAY_SWITCHES environment 
 variable.
@@ -166,7 +166,7 @@ Don't keep track of execution counts
 
 =head2 --match
 
-Filter function that match string
+Filter functions that match string
 
 =head2 -v, --verbose
 

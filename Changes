@@ -1,7 +1,13 @@
 Revision history for JavaScript-XRay
 
+0.99_2  6/23/2006
+        * Added EXED_FILES => [ 'bin/jsxray' ] to the Makefile.PL to install
+          jsxray.
+        * Fix documentation of jsxay to change switch 'filter' to 'match'
+
 0.99_1  6/22/2006
         * Wanted to get this code out there before I write more tests.
+        * Renamed the 'filter' switch to 'match'
         * Cleaned up the whole switches setting interface to make things a 
           bit more clear.
         * Fixed a bug where javascript was attempting to log before the DOM 
