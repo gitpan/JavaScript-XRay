@@ -5,157 +5,48 @@ use Carp qw(croak);
 use LWP::Simple qw(get);
 use URI;
 
-=head1 NAME
-
-JavaScript::XRay - See What JavaScript is Doing
-
-=head1 VERSION
-
-Version 0.99_4
-
-=cut
-
-our $VERSION = '0.99_4';
+our $VERSION = '0.99_5';
 our $PACKAGE = __PACKAGE__;
+our %SWITCHES = (
+    all => {
+        type => 'bool',
+        desc => 'filter all functions (default)',
+    },
+    none => {
+        type => 'bool',
+        desc => 'don\'t filter any functions',
+    },
+    anon => {
+        type => 'bool',
+        desc => 'filter anon functions (noisy)',
+    },
+    no_exec_count => {
+        type => 'bool',
+        desc => 'don\'t count function executions',
+    },
+    only => {
+        type     => 'function1,function2,...',
+        desc     => 'only filter listed functions (exact)',
+        ref_type => 'ARRAY'
+    },
+    skip => {
+        type     => 'function1,function2,...',
+        desc     => 'skip listed functions (exact)',
+        ref_type => 'ARRAY'
+    },
+    uncomment => {
+        type     => 'string1,string2,...',
+        desc     => 'uncomment lines prefixed with string (DEBUG1,DEBUG2)',
+        ref_type => 'ARRAY'
+    },
+    match => {
+        type     => 'string',
+        desc     => 'only filter functions that match string (/^string/)',
+        ref_type => 'Regexp'
+    },
+);
 
-=head1 SYNOPSIS
-
- #!/usr/bin/perl
- use strict;
- use warnings;
- use JavaScript::XRay;
-
- # HTML page with a <head> and <body> tag and some javascript functions
- my $html_page = do { local $/; <> };
-
- # create a new instance
- my $jsxray = JavaScript::XRay->new();
-
- # to inline/filter external javascript files you'll need 'abs_uri'
- # my $jsxray = JavaScript::XRay->new( 
- #     abs_uri => $abs_url_or_local_file_path
- # );
-
- # use switches to change filtering behavior
- # $jsxray->switches( only => 'onData' );
-
- # use inlining to inline/filter external javascript files
- # $jsxray->inline_methods( 'dir1', 'dir2', \&callback, 'HTTP_GET' );
-
- # filter page
- print $js_xray->filter($html_page);
-
-=head1 DESCRIPTION
-
-JavaScript::XRay is an HTML source filter.  It was developed as
-a tool to help figure out and debug large JavaScript frameworks.  
-
-The main idea is that you hook it into your application framework
-and give you the ability to 'flip a switch' an inject a JavaScript
-function tracing console into your out going page.
-
-=head2 Some of the things it does...
-
-=over 4
-
-=item * Injects an IFrame logging console
-
-It finds the body tag in the document and injects the IFrame just after it
-along with all the JavaScript to drive it.  It also provides you with a 
-logging function with the same name as your alias (defaults to jsxray)
-
-   jsxray("Hi there");
-
-=item * Scans HTML for JavaScript functions
-
-For each function it finds it inserts a call to this method which logs 
-the function call along with the value of the function arguments.
-
-    function sum ( x, y ) {
-
-becomes 
-
-    function sum ( x, y ) {
-        jsxray( "sum( " + x + ", " + y + " )" );
-
-so now any call this function and its arguments will get logged to the 
-IFrame.
-
-=item * Switches to limit what you log
-
-You can manually B<skip> specific functions, choose to see B<only>
-functions you specify, or match functions matching a specified
-string. ( see the switchs methods )
-
-=item * Provide execution counts
-
-Provides a method to see how often your functions are being called.  This can
-be helpful to target which functions to refactor to increase performance.
-
-=item * Inlines external JavaScript files
-
-If external javascript files are referenced, they can be inlined so they'll
-be filtered as well.
-
-=item * Command line script 'jsxray'
-
-Use the command line script 'jsxray' to save and filter local HTML files
-to see how things work.  Think reverse engineering. :)
-
-=item * Save the log for later.
-
-You can cut and paste the IFrame to a text file to analyze later by hand 
-or munge the results with perl.  Extremely helpful in moments when you 
-have a lot of code executing and your just trying to get a handle on
-what's happening.
-
-=back
-
-=head1 CONSTRUCTOR
-
-=head2 JavaScript::XRay->new( %hash );
-
-Create a new instance with the following arguments
-
-=over 4
-
-=item * alias
-
-Think of this as a JavaScript namespace.  All injeted JavaScript functions 
-and variables are prefixed with this B<alias> to avoid colliding with 
-any code that currently exists on your page.  It also is the prefix used for
-all the switches to toggle things on and off.
-
-=item * switches
-
-Hash reference containing switches to change filtering behavior.  Actually
-just dereferences the hash and passes it onto the 'switches' method.
-
-=item * abs_uri
-
-Used to help find and filter external javascript files.  It can be the 
-absolute URL of the requested file via a webserver or the path of the 
-file you're filtering from the command line.
-
-=item * iframe_height
-
-The height of your logging IFrame, defaults to 200 pixels.
-
-=item * css_inline
-
-Change the style of the logging IFrame via inline CSS.
-
-=item * css_external
-
-Change the style of the logging IFrame via an external stylesheet.
-
-=item * verbose
-
-Turn on verbose output (bool)
-
-=back
-
-=cut
+our @SWITCH_KEYS = keys %SWITCHES;
 
 sub new {
     my ( $class, %args ) = @_;
@@ -168,8 +59,8 @@ sub new {
         css_inline       => $args{css_inline},
         css_external     => $args{css_external},
         verbose          => $args{verbose},
-        js_log           => "",
-        js_log_init      => "",
+        js_log           => '',
+        js_log_init      => '',
     };
 
     bless $obj, $class;
@@ -184,132 +75,9 @@ sub new {
 sub _init_uri {
     my ( $self, $abs_uri ) = @_;
     return unless $abs_uri;
-    $self->{abs_uri} = ref $abs_uri eq "URI" ? $abs_uri : URI->new($abs_uri);
+    $self->{abs_uri} = ref $abs_uri eq 'URI' ? $abs_uri : URI->new($abs_uri);
+    return;
 }
-
-
-=head1 METHODS
-
-=head2 $jsxray->switches( %switches )
-
-Switches control the behavior of which is going to be filtered and provide
-the ability to uncomment debugging code on the fly.
-
-=over 4
-
-=item * all (bool)
-
-Turn on filtering of all functions.  This is the default behavior.
-
-    all => 1
-
-=item * none (bool)
-
-Turn off filtering of functions.  Helpful in combination with uncomment 
-switch.
-
-    none => 1
-
-=item * uncomment ( string1, string2, ... )
-
-Uncomment lines prefix with these strings.  Helpful with injecting 
-timing code, or more specific debugging code.  You can deploy 
-commented logging code to production and turn it on when your 
-turn on filtering.  Extremely helpful when diagnosing problems you 
-can't reproduce in your development environment.
-
-    uncomment => "DEBUG1,DEBUG3"
-    uncomment => [ qw( DEBUG1 DEBUG3 ) ]
-
-will turn this...
-
-    //DEBUG1 jsxray("Hey this is debug1");
-    //DEBUG2 jsxray("Hey this is debug2");
-    //DEBUG3 jsxray("Hey this is debug3");
-
-into this
-
-    jsxray("Hey this is debug1");
-    //DEBUG2 jsxray("Hey this is debug2");
-    jsxray("Hey this is debug3");
-
-=item * anon  (bool)
-
-Include filtering of anonymous functions.
-
-    anon => 1
-
-=item * no_exec_count ( bool )
-
-Don't inject code that keeps track of how many times a function was called. 
-
-    no_exec_count => 1
-
-=item * only ( function1, function2, ... )
-
-Only filter comma separated list of functions (function1,function2,...)
-
-    only => "processData,writeToPage"
-    only => [ qw( processData writeToPage ) ]
-
-=item * skip ( function1, function2, ... )
-
-Skip comma separated list of functions
-
-    skip => "formatNumber,onData"
-    skip => [ qw( formatNumber onData ) ]
-
-=item * match ( /^string/ )
-
-Only filter functions that match string
-
-    match => 'string'           # will result in qr/^string/
-    match => qr/whatever/
-
-=back
-
-=cut 
-
-our %SWITCHES = (
-    all => {
-        type => "bool",
-        desc => "filter all functions (default)",
-    },
-    none => {
-        type => "bool",
-        desc => "don't filter any functions",
-    },
-    anon => {
-        type => "bool",
-        desc => "filter anon functions (noisy)",
-    },
-    no_exec_count => {
-        type => "bool",
-        desc => "don't count function executions",
-    },
-    only => {
-        type     => "function1,function2,...",
-        desc     => "only filter listed functions (exact)",
-        ref_type => 'ARRAY'
-    },
-    skip => {
-        type     => "function1,function2,...",
-        desc     => "skip listed functions (exact)",
-        ref_type => 'ARRAY'
-    },
-    uncomment => {
-        type     => "string1,string2,...",
-        desc     => "uncomment lines prefixed with string (DEBUG1,DEBUG2)",
-        ref_type => 'ARRAY'
-    },
-    match => {
-        type     => "string",
-        desc     => "only filter functions that match string (/^string/)",
-        ref_type => 'Regexp'
-    },
-);
-
-our @SWITCH_KEYS = keys %SWITCHES;
 
 sub switches {
     my ( $self, %switches ) = @_;
@@ -330,106 +98,56 @@ sub switches {
         }
         my $ref_type = ref $switches{$switch};
         $self->{switches}{$switch} = 
-              $ref_type eq "ARRAY" && $SWITCHES{$switch}{ref_type} eq "ARRAY"
-            ? join(",", @{ $switches{$switch} })
+              $ref_type eq 'ARRAY' && $SWITCHES{$switch}{ref_type} eq 'ARRAY'
+            ? join(',', @{ $switches{$switch} })
             : $switches{$switch};
     }
     
     # init other switches so we don't get warnings
     for my $switch (@SWITCH_KEYS) {
-        $self->{switches}{$switch} = ""
+        $self->{switches}{$switch} = ''
             unless $self->{switches}{$switch};
     }
+
+    return %{ $self->{switches} };
 }
-
-=head2 $jsxray->inline_methods( @methods );
-
-B<WARNING THIS FUNCTIONALITY IS EXPERIMENTAL AND THE INTERFACE MAY CHANGE>
-
-Take external javascript blocks (use src attribute) and get the 
-javascript, filter it, and inline the code.  There are currently 
-three supported methods to do this.  
-
-=over 4
-
-=item * HTTP_GET (default)
-
-Special string that represents using LWP::Simple to attempt to fetch 
-external javascript.  If the src attribute isn't absolute, then you'll
-need to pass the 'abs_uri' in when you create your instance.
-
-=item * File Directory
-
-Base file path to use with the src attribute to load the javascript off
-disk.  From a webserver, you'd probably include the web root and from
-the commandline, you'd use the path of the file you're filtering.
-
-=item * Code Reference
-
-The arguments to the code reference are the src attribute from the 
-javascript attribute and the code block must return the coresponding
-code.
-    
-    $javascript_code = &$code_ref( $src_attr, $abs_uri );
-
-=back
-
-=cut
 
 sub inline_methods {
     my ( $self, @methods ) = @_;
 
-    my @valid_methods = ();
-    for my $method (@methods) {
-        unless ( -d $method
-            || $method     eq "HTTP_GET"
-            || ref $method eq "CODE" )
-        {
-            warn "inline methods may only be local server "
-                . "directories, code references, or the special string "
-                . "HTTP_GET - invalid method: $method";
+    if ( @methods ) {
+        my @valid_methods = ();
+        for my $method (@methods) {
+            unless ( -d $method
+                || $method     eq 'HTTP_GET'
+                || ref $method eq 'CODE' )
+            {
+                warn 'inline methods may only be local server '
+                    . 'directories, code references, or the special string '
+                    . "HTTP_GET - invalid method: $method";
+            }
+            else {
+                push @valid_methods, $method;
+            }
         }
-        else {
-            push @valid_methods, $method;
+
+        unless (@valid_methods) {
+            warn 'inline_methods called without valid methods';
+            exit;
         }
+    
+        $self->{inline_methods} = \@valid_methods;
     }
 
-    unless (@valid_methods) {
-        warn "inline_methods called without valid methods";
-        exit;
-    }
-
-    $self->{inline_methods} = \@valid_methods;
+    return wantarray ? @{ $self->{inline_methods} } : $self->{inline_methods};
 }
-
-=head2 $jsxray->filter( $html );
-
-Pass HTML in, get modified HTML out.
-
-=cut
-
-our $function_match = qr#
-    \G
-    (.+?)
-    (
-        function?
-        \s*
-        (?:\w|_)+?
-        \s*?
-        \(
-        .+?
-        \)?
-        \s*
-        \{
-    )
-#imosx;
 
 sub filter {
     my ( $self, $html ) = @_;
 
     my ( $alias, $switch ) = ( $self->{alias}, $self->{switches} );
 
-    $self->_warn( "Tracing anonymous functions" )
+    $self->_warn( 'Tracing anonymous functions' )
         if $switch->{anon} && !$switch->{only};
 
     $self->_warn( "Only tracing functions exactly matching: $switch->{only}" )
@@ -455,16 +173,33 @@ sub _filter {
 
     my ( $alias, $switch ) = ( $self->{alias}, $self->{switches} );
 
-    my $new_html = "";
-    while ( $work_html =~ /$function_match/cg ) {
+    my $new_html = '';
+    while (
+        $work_html =~ m/ 
+            \G
+            (.+?)
+            (
+                function?
+                \s*
+                (?:\w|_)+?
+                \s*?
+                \(
+                .+?
+                \)?
+                \s*
+                \{
+            )
+        /cgimosx
+        )
+    {
 
         # build output page from input page
         $new_html .= $1;
 
         # find the function name
         my $function .= $2;
-        my ($name) = $function =~ /function\s*(\w+?)?\s*?\(/g;
-        $name = "" unless $name;  # define it to supress warnings
+        my ($name) = $function =~ m/function\s*(\w+?)?\s*?\(/gx;
+        $name = '' unless $name;  # define it to supress warnings
 
         # don't want any recursive JavaScript loops
         croak( "found function '$name', functions may "
@@ -472,11 +207,11 @@ sub _filter {
             if $name eq $alias;
 
         # find the function arguments
-        my ($args) = $function =~ /function\s*$name?\s*?\((.+?)\)/g;
-        $name = "ANON" unless $name;
+        my ($args) = $function =~ m/function\s*$name?\s*?\((.+?)\)/gx;
+        $name = 'ANON' unless $name;
 
         unless ( $switch->{no_exec_count}
-            || ( $name eq "ANON" && !$switch->{anon} ) )
+            || ( $name eq 'ANON' && !$switch->{anon} ) )
         {
             $self->{js_log_init} .= "${alias}_exec_count['$name'] = 0;\n";
             $function            .= "${alias}_exec_count['$name']++;";
@@ -489,7 +224,7 @@ sub _filter {
             ? map { $_ => 1 } split( /\,/, $switch->{skip} )
             : ();
 
-        my $function_filter = "";
+        my $function_filter = '';
         if (ref $switch->{match} eq 'Regexp') {
             $function_filter = $switch->{match};
         }
@@ -505,10 +240,10 @@ sub _filter {
         #   if switch 'skip' used and function matches
         #   if switch 'filter' used and function doesn't match
         if (   ( $switch->{none} )
-            || ( $name eq "ANON" && !$switch->{anon} )
+            || ( $name eq 'ANON' && !$switch->{anon} )
             || ( $switch->{only}   && !$only_function{$name} )
             || ( $switch->{skip}   && $skip_function{$name} )
-            || ( $switch->{match} && $name !~ /$function_filter/ ) )
+            || ( $switch->{match} && $name !~ m/$function_filter/x ) )
         {
             $new_html .= $function;
         }
@@ -518,10 +253,10 @@ sub _filter {
             # build out function arguments - this is the cool part
             # you also get to see the value of arguments passed to the 
             # function, _extremely_ handy
-            my $filtered_args = "";
+            my $filtered_args = '';
             if ($args) {
                 my @arg_list = split( /\,/, $args );
-                $filtered_args = "'+" . join( "+', '+", @arg_list ) . "+'";
+                $filtered_args = '\'+' . join( '+\', \'+', @arg_list ) . '+\'';
             }
 
             # insert the log call
@@ -537,57 +272,60 @@ sub _filter {
     return $new_html;
 }
 
-# match html and including script block
-our $script_block_match = qr#
-    \G
-    (.*?)
-    (
-        <script
-        .*?
-        </script>
-    )
-#imosx;
-
-# get script block attributes and content
-our $external_js_match = qr#
-    <script
-    (.*?)
-    \s*?>
-    (.*?)
-    <\/script>
-#imosx;
-
-# pull out name value pairs or special bool attribute 'defer'
-our $script_attrs_match= qr#
-    \G
-    \s*
-    (?: (defer) | 
-        (.+?)
-        \s*
-        \=
-        \s*
-        (?: [\"\'](.+?)[\"\'] | (\w+) )
-    )
-#imosx;
-
 sub _inline_javascript {
     my ( $self, $work_html ) = @_;
 
-    my $new_html = "";
+    my $new_html = '';
 
     # look through the HTML for script blocks
-    while ( $work_html =~ /$script_block_match/cg ) {
-
+    while (
+        $work_html =~ m/
+        \G
+        (.*?)
+        (
+            <script
+            .*?
+            <\/script>
+        )
+        /cgimosx
+        )
+    {
         $new_html .= $1;
         my $script_block = $2;
 
         # pull out both script attributes and inner script
-        while ( $script_block =~ /$external_js_match/cg ) {
+        while (
+            $script_block =~ /
+                <script
+                (.*?)
+                \s*?>
+                (.*?)
+                <\/script>
+            /cgimosx
+            )
+        {
             my ( $script_attrs, $inner_script ) = ( $1, $2 );
             $script_attrs =~ s/\s*\=\s*/\=/g;    # clean up white space
 
+            # parse out name value pairs so we can rebuild the script
+            # element properly.  (special case 'defer' is a boolean 
+            # and has no value
             my %attrs = ();
-            while ( $script_attrs =~ /$script_attrs_match/cg ) {
+            while (
+                $script_attrs =~ /
+                \G
+                \s*
+                (?: (defer) | 
+                    (.+?)
+                    \s*
+                    \=
+                    \s*
+                    (?: [\"\'](.+?)[\"\'] | (\w+) )
+                )
+                /cgimosx
+                )
+            {
+
                 my ( $defer, $name, $value ) = ( $1, $2, $3 || $4 );
                 if ($defer) {
                     $attrs{$defer} = 1;
@@ -599,13 +337,13 @@ sub _inline_javascript {
 
             if ( keys %attrs && $attrs{src} ) {
                 my @attrs = map {
-                    $_ eq "defer" ? $_ : "$_=\"$attrs{$_}\"";
-                } grep { $_ ne "src" } keys %attrs;
+                    $_ eq 'defer' ? $_ : "$_=\"$attrs{$_}\"";
+                } grep { $_ ne 'src' } keys %attrs;
 
                 my $js = $self->_get_external_javascript($attrs{src});
     
                 if ($js) {
-                    my $inline_javascript = "<script "
+                    my $inline_javascript = '<script '
                         . join( ' ', @attrs ) . "><!--\n"
                         . $js
                         . "\n--></script>";
@@ -614,7 +352,7 @@ sub _inline_javascript {
                     $new_html .= $inline_javascript;
                 }
                 else {
-                    warn "failed to inline (or referenced URI is empty): "
+                    warn 'failed to inline (or referenced URI is empty): '
                         . $script_block;
                     $new_html .= $script_block;
                 }
@@ -634,11 +372,11 @@ sub _inline_javascript {
 
 sub _get_external_javascript {
     my ( $self, $src ) = @_;
-    my $js = "";
+    my $js = '';
 
     if ( $src !~ /^http/i && !$self->{abs_uri} ) {
-        warn "unable to inline/filter external javascript files with an"
-            . "absolute request uri: abs_uri not defined";
+        warn 'unable to inline/filter external javascript files with an'
+            . 'absolute request uri: abs_uri not defined';
         return $js;
     }
 
@@ -651,20 +389,20 @@ sub _get_external_javascript {
         : URI->new($src);
 
     for my $method ( @{$self->{inline_methods}} ) {
-        if ($method eq "HTTP_GET") {
+        if ($method eq 'HTTP_GET') {
             $js = get( $abs_js_uri );
         }
         elsif ( -d $method ) {
             my $possible_js_file = $method . $abs_js_uri->path;
-            if ( open( my $fh, $possible_js_file ) ) {
-                $js = do { local $/; <$fh> };
+            if ( open( my $fh, 'r', $possible_js_file ) ) {
+                $js = do { local $/; $/ = undef; <$fh> };
                 close $fh;
             }
             else {
                 warn "failed to open: $possible_js_file: $!";
             }
         }
-        elsif ( ref $method eq "CODE" ) {
+        elsif ( ref $method eq 'CODE' ) {
             $js = &$method( $src, $self->{abs_uri} );
         }
         last if $js;
@@ -688,11 +426,13 @@ sub _uncomment {
     for my $uncomment (@uncomment_strings) {
         my $uncomment_count = $$html_ref =~ s/\/\/$uncomment//gs;
         if ($uncomment_count) {
-            my $label = $uncomment_count > 1 ? "instances" : "instance";
+            my $label = $uncomment_count > 1 ? 'instances' : 'instance';
             $self->_warn( "$PACKAGE->filter uncommented $uncomment: "
                     . "Found $uncomment_count $label" );
         }
     }
+
+    return;
 }
 
 sub _inject_js_css {
@@ -865,6 +605,8 @@ sub _inject_js_css {
     $js_css .= $self->_css;
 
     $$html_ref =~ s/(<head.*?>)/$1$js_css/is;
+
+    return;
 }
 
 sub _inject_console {
@@ -892,7 +634,7 @@ sub _inject_console {
     <table cellpadding=0 cellspacing=0 border=0>|;
 
     for my $switch ( @SWITCH_KEYS ) {
-        my $value = $switches->{$switch} || "";
+        my $value = $switches->{$switch} || '';
         $iframe .= qq|<tr>
                 <td class='${alias}_desc'>${alias}_$switch</td>
                 <td>&nbsp;&nbsp;</td>
@@ -914,6 +656,8 @@ sub _inject_console {
     </div>|;
 
     $$html_ref =~ s/(<body.*?>)/$1$iframe/is;
+
+    return;
 }
 
 sub _css {
@@ -973,11 +717,11 @@ sub _css {
 
     # cat inline css
     $css .= $self->{css_inline} if $self->{css_inline};
-    $css .= qq|\n</style>\n|;
+    $css .= "\n</style>\n";
 
     # include external file
-    $css .= qq|<link href="self->{css_external}" rel="stylesheet" |
-        . qq|type="text/css" />\n|
+    $css .= "<link href='$self->{css_external}' rel='stylesheet' "
+        . "type='text/css' />\n"
         if $self->{css_external};
 
     if ($escape_bool) {
@@ -994,7 +738,273 @@ sub _warn {
     warn "[$alias] $msg\n" if $self->{verbose};
     $self->{js_log} .= qq|    ${alias}_pre_iframe_queue.push(|
         . qq|"${PACKAGE}-&gt;filter $msg");\n|;
+    return;
 }
+
+1;
+
+__END__
+
+=head1 NAME
+
+JavaScript::XRay - See What JavaScript is Doing
+
+=head1 VERSION
+
+Version 0.99_5
+
+=head1 SYNOPSIS
+
+ #!/usr/bin/perl
+ use strict;
+ use warnings;
+ use JavaScript::XRay;
+
+ # HTML page with a <head> and <body> tag and some javascript functions
+ my $html_page = do { local $/; <> };
+
+ # create a new instance
+ my $jsxray = JavaScript::XRay->new();
+
+ # to inline/filter external javascript files you'll need 'abs_uri'
+ # my $jsxray = JavaScript::XRay->new( 
+ #     abs_uri => $abs_url_or_local_file_path
+ # );
+
+ # use switches to change filtering behavior
+ # $jsxray->switches( only => 'onData' );
+
+ # use inlining to inline/filter external javascript files
+ # $jsxray->inline_methods( 'dir1', 'dir2', \&callback, 'HTTP_GET' );
+
+ # filter page
+ print $js_xray->filter($html_page);
+
+=head1 DESCRIPTION
+
+JavaScript::XRay is an HTML source filter.  It was developed as
+a tool to help figure out and debug large JavaScript frameworks.  
+
+The main idea is that you hook it into your application framework
+and give you the ability to 'flip a switch' an inject a JavaScript
+function tracing console into your out going page.
+
+=head2 Some of the things it does...
+
+=over 4
+
+=item * Injects an IFrame logging console
+
+It finds the body tag in the document and injects the IFrame just after it
+along with all the JavaScript to drive it.  It also provides you with a 
+logging function with the same name as your alias (defaults to jsxray)
+
+   jsxray("Hi there");
+
+=item * Scans HTML for JavaScript functions
+
+For each function it finds it inserts a call to this method which logs 
+the function call along with the value of the function arguments.
+
+    function sum ( x, y ) {
+
+becomes 
+
+    function sum ( x, y ) {
+        jsxray( "sum( " + x + ", " + y + " )" );
+
+so now any call this function and its arguments will get logged to the 
+IFrame.
+
+=item * Switches to limit what you log
+
+You can manually B<skip> specific functions, choose to see B<only>
+functions you specify, or match functions matching a specified
+string. ( see the switchs methods )
+
+=item * Provide execution counts
+
+Provides a method to see how often your functions are being called.  This can
+be helpful to target which functions to refactor to increase performance.
+
+=item * Inlines external JavaScript files
+
+If external javascript files are referenced, they can be inlined so they'll
+be filtered as well.
+
+=item * Command line script 'jsxray'
+
+Use the command line script 'jsxray' to save and filter local HTML files
+to see how things work.  Think reverse engineering. :)
+
+=item * Save the log for later.
+
+You can cut and paste the IFrame to a text file to analyze later by hand 
+or munge the results with perl.  Extremely helpful in moments when you 
+have a lot of code executing and your just trying to get a handle on
+what's happening.
+
+=back
+
+=head1 CONSTRUCTOR
+
+=head2 JavaScript::XRay->new( %hash );
+
+Create a new instance with the following arguments
+
+=over 4
+
+=item * alias
+
+Think of this as a JavaScript namespace.  All injeted JavaScript functions 
+and variables are prefixed with this B<alias> to avoid colliding with 
+any code that currently exists on your page.  It also is the prefix used for
+all the switches to toggle things on and off.
+
+=item * switches
+
+Hash reference containing switches to change filtering behavior.  Actually
+just dereferences the hash and passes it onto the 'switches' method.
+
+=item * abs_uri
+
+Used to help find and filter external javascript files.  It can be the 
+absolute URL of the requested file via a webserver or the path of the 
+file you're filtering from the command line.
+
+=item * iframe_height
+
+The height of your logging IFrame, defaults to 200 pixels.
+
+=item * css_inline
+
+Change the style of the logging IFrame via inline CSS.
+
+=item * css_external
+
+Change the style of the logging IFrame via an external stylesheet.
+
+=item * verbose
+
+Turn on verbose output (bool)
+
+=back
+
+=head1 METHODS
+
+=head2 $jsxray->switches( %switches )
+
+Switches control the behavior of which is going to be filtered and provide
+the ability to uncomment debugging code on the fly.
+
+=over 4
+
+=item * all (bool)
+
+Turn on filtering of all functions.  This is the default behavior.
+
+    all => 1
+
+=item * none (bool)
+
+Turn off filtering of functions.  Helpful in combination with uncomment 
+switch.
+
+    none => 1
+
+=item * uncomment ( string1, string2, ... )
+
+Uncomment lines prefix with these strings.  Helpful with injecting 
+timing code, or more specific debugging code.  You can deploy 
+commented logging code to production and turn it on when your 
+turn on filtering.  Extremely helpful when diagnosing problems you 
+can't reproduce in your development environment.
+
+    uncomment => "DEBUG1,DEBUG3"
+    uncomment => [ qw( DEBUG1 DEBUG3 ) ]
+
+will turn this...
+
+    //DEBUG1 jsxray("Hey this is debug1");
+    //DEBUG2 jsxray("Hey this is debug2");
+    //DEBUG3 jsxray("Hey this is debug3");
+
+into this
+
+    jsxray("Hey this is debug1");
+    //DEBUG2 jsxray("Hey this is debug2");
+    jsxray("Hey this is debug3");
+
+=item * anon  (bool)
+
+Include filtering of anonymous functions.
+
+    anon => 1
+
+=item * no_exec_count ( bool )
+
+Don't inject code that keeps track of how many times a function was called. 
+
+    no_exec_count => 1
+
+=item * only ( function1, function2, ... )
+
+Only filter comma separated list of functions (function1,function2,...)
+
+    only => "processData,writeToPage"
+    only => [ qw( processData writeToPage ) ]
+
+=item * skip ( function1, function2, ... )
+
+Skip comma separated list of functions
+
+    skip => "formatNumber,onData"
+    skip => [ qw( formatNumber onData ) ]
+
+=item * match ( /^string/ )
+
+Only filter functions that match string
+
+    match => 'string'           # will result in qr/^string/
+    match => qr/whatever/
+
+=back
+
+=head2 $jsxray->inline_methods( @methods );
+
+B<WARNING THIS FUNCTIONALITY IS EXPERIMENTAL AND THE INTERFACE MAY CHANGE>
+
+Take external javascript blocks (use src attribute) and get the 
+javascript, filter it, and inline the code.  There are currently 
+three supported methods to do this.  
+
+=over 4
+
+=item * HTTP_GET (default)
+
+Special string that represents using LWP::Simple to attempt to fetch 
+external javascript.  If the src attribute isn't absolute, then you'll
+need to pass the 'abs_uri' in when you create your instance.
+
+=item * File Directory
+
+Base file path to use with the src attribute to load the javascript off
+disk.  From a webserver, you'd probably include the web root and from
+the commandline, you'd use the path of the file you're filtering.
+
+=item * Code Reference
+
+The arguments to the code reference are the src attribute from the 
+javascript attribute and the code block must return the coresponding
+code.
+    
+    $javascript_code = &$code_ref( $src_attr, $abs_uri );
+
+=back
+
+=head2 $jsxray->filter( $html );
+
+Pass HTML in, get modified HTML out.
 
 =head1 AUTHOR
 
@@ -1081,6 +1091,3 @@ Copyright 2006 Jeff Bisbee, all rights reserved.
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
-=cut
-
-1;

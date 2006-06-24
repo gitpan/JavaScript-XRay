@@ -2,7 +2,7 @@ NAME
     JavaScript::XRay - See What JavaScript is Doing
 
 VERSION
-    Version 0.99_3
+    Version 0.99_5
 
 SYNOPSIS
      #!/usr/bin/perl

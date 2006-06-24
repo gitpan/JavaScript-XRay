@@ -37,7 +37,7 @@ GetOptions(
 ) or exit 1;
 
 for my $file ( @ARGV ) {
-    open my $fh, $file or die "can't open $file: $!";
+    open my $fh, 'r', $file or die "can't open $file: $!";
     my $html = do { local $/; <$fh> };
     close $fh;
 
@@ -69,14 +69,15 @@ for my $file ( @ARGV ) {
     if ($name =~ /\./) {
         my @parts = split(/\./,$name);
         $parts[-2] .= '-xrayed';
-        $name = join('.',@parts);
+        $name = join( '.', @parts );
     }
     else {
         $name .= '-xrayed';
     }
 
     my $new_file = $path . $name;
-    open( my $output, ">$new_file") || die "Can't open file $new_file: $!";
+    open( my $output, 'w', ">$new_file" )
+        || die "Can't open file $new_file: $!";
     print $output $jsxray->filter($html);
     close $output;
     print $new_file . "\n";
@@ -85,9 +86,10 @@ for my $file ( @ARGV ) {
 sub print_version {
     printf( "jsxray v%s, using JavaScript::XRay v%s and Perl v%vd\n",
         $VERSION, $JavaScript::XRay::VERSION, $^V );
+    return;
 }
 
-__DATA__
+__END__
 
 =head1 NAME
 

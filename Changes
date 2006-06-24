@@ -1,6 +1,12 @@
 Revision history for JavaScript-XRay
 
-0.99_3  6/24/2006
+0.99_5  6/24/2006
+        * Used 'perlcritic' to start to apply PBP to the source.
+            * moved all pod into the __END__ block
+            * fixed regexes to add the m prefix and x suffix to most
+            * changed all open statements to use the 3 argument open 
+
+0.99_4  6/22/2006
         * Don't insert newlines when adding javascript code.
 
 0.99_3  6/23/2006
