@@ -5,7 +5,7 @@ use Carp qw(croak);
 use LWP::Simple qw(get);
 use URI;
 
-our $VERSION = '0.99_5';
+our $VERSION = '1.0';
 our $PACKAGE = __PACKAGE__;
 our %SWITCHES = (
     all => {
@@ -751,7 +751,7 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 0.99_5
+Version 1.0
 
 =head1 SYNOPSIS
 

@@ -1,5 +1,8 @@
 Revision history for JavaScript-XRay
 
+1.0     6/26/2006
+        * Just wanted to make sure folks got the latest version for YAPC
+
 0.99_5  6/24/2006
         * Used 'perlcritic' to start to apply PBP to the source.
             * moved all pod into the __END__ block
