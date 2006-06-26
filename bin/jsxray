@@ -37,7 +37,7 @@ GetOptions(
 ) or exit 1;
 
 for my $file ( @ARGV ) {
-    open my $fh, 'r', $file or die "can't open $file: $!";
+    open my $fh, '<', $file or die "can't open $file: $!";
     my $html = do { local $/; <$fh> };
     close $fh;
 
@@ -76,7 +76,7 @@ for my $file ( @ARGV ) {
     }
 
     my $new_file = $path . $name;
-    open( my $output, 'w', ">$new_file" )
+    open( my $output, '>', $new_file )
         || die "Can't open file $new_file: $!";
     print $output $jsxray->filter($html);
     close $output;

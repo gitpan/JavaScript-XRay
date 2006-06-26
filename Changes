@@ -1,5 +1,8 @@
 Revision history for JavaScript-XRay
 
+1.01    6/26/2006
+        * Fixed regression bug (fixed syntax on 3 arg open)
+
 1.0     6/26/2006
         * Just wanted to make sure folks got the latest version for YAPC
 

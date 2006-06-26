@@ -5,7 +5,7 @@ use Carp qw(croak);
 use LWP::Simple qw(get);
 use URI;
 
-our $VERSION = '1.0';
+our $VERSION = '1.01';
 our $PACKAGE = __PACKAGE__;
 our %SWITCHES = (
     all => {
@@ -394,7 +394,7 @@ sub _get_external_javascript {
         }
         elsif ( -d $method ) {
             my $possible_js_file = $method . $abs_js_uri->path;
-            if ( open( my $fh, 'r', $possible_js_file ) ) {
+            if ( open( my $fh, '<', $possible_js_file ) ) {
                 $js = do { local $/; $/ = undef; <$fh> };
                 close $fh;
             }
@@ -751,7 +751,7 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 1.0
+Version 1.01
 
 =head1 SYNOPSIS
 
