@@ -8,7 +8,7 @@ use Pod::Usage qw(pod2usage);
 use File::Spec::Functions qw(rel2abs splitpath);
 use File::Basename qw(fileparse);
 
-our $VERSION = "0.02";
+our $VERSION = '0.03';
 my ( $verbose, $alias, $iframe_height, $css_external );
 my ( $all, $none, $anon, @skip, @only, @uncomment, $no_exec_count, $match );
 
@@ -62,7 +62,7 @@ for my $file ( @ARGV ) {
     );
 
     my $dir = (splitpath($abs_uri))[1];
-    $jsxray->inline_methods($dir, "HTTP_GET");
+    $jsxray->inline_methods("HTTP_GET", $dir);
 
     # build new filename
     my ($name,$path) = fileparse($abs_uri); 
@@ -177,6 +177,14 @@ Verbose output
 =head2 -V, --version
 
 Display version info
+
+=head2 -h, --help
+
+Display short usage help
+
+=head2 -H, --man
+
+Manpage for jsxray
 
 =head1 BUGS
 

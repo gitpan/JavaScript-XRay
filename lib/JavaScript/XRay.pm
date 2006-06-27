@@ -5,7 +5,7 @@ use Carp qw(croak);
 use LWP::Simple qw(get);
 use URI;
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 our $PACKAGE = __PACKAGE__;
 our %SWITCHES = (
     all => {
@@ -751,7 +751,7 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 1.01
+Version 1.02
 
 =head1 SYNOPSIS
 
@@ -787,7 +787,7 @@ a tool to help figure out and debug large JavaScript frameworks.
 
 The main idea is that you hook it into your application framework
 and give you the ability to 'flip a switch' an inject a JavaScript
-function tracing console into your out going page.
+function tracing console into your outgoing page.
 
 =head2 Some of the things it does...
 
@@ -1025,6 +1025,8 @@ ANY webpage you go to.
 
 Add a form to the console that will allow you to see the values of the
 switches and then resubmit the url to have the changes take affect.
+
+=item * Add .toSource to objects when logging (or a switch to turn it on)
 
 =back
 
