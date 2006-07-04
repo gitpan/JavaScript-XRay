@@ -1,5 +1,13 @@
 Revision history for JavaScript-XRay
 
+1.1     7/3/2006
+        * Fixed inline code and added tests to cover all cases.  I just 
+          needed to use URI->abs_uri
+        * New mailing list for JavaScript::XRay development
+          jsxray-dev@googlegroups.com
+          http://groups.google.com/group/jsxray-dev
+        * Added reference to the new mailing list in the pod
+
 1.02    6/26/2006
         * Fixed jsxray inline methods to try fetching if absolute url first.
 

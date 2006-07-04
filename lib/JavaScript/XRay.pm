@@ -5,7 +5,7 @@ use Carp qw(croak);
 use LWP::Simple qw(get);
 use URI;
 
-our $VERSION = '1.02';
+our $VERSION = '1.1';
 our $PACKAGE = __PACKAGE__;
 our %SWITCHES = (
     all => {
@@ -27,7 +27,7 @@ our %SWITCHES = (
     only => {
         type     => 'function1,function2,...',
         desc     => 'only filter listed functions (exact)',
-        ref_type => 'ARRAY'
+        ref_type => 'ARRAY',
     },
     skip => {
         type     => 'function1,function2,...',
@@ -54,11 +54,11 @@ sub new {
     my $alias = $args{alias} || 'jsxray';
     my $obj = {
         alias            => $alias,
-        abs_uri          => $args{abs_uri},
         iframe_height    => $args{iframe_height} || 200,
         css_inline       => $args{css_inline},
         css_external     => $args{css_external},
         verbose          => $args{verbose},
+        inline_methods   => ['HTTP_GET'],
         js_log           => '',
         js_log_init      => '',
     };
@@ -66,7 +66,6 @@ sub new {
     bless $obj, $class;
 
     $obj->_init_uri( $args{abs_uri} );
-    #$obj->auto_switches if $obj->can('auto_swtiches');
     $obj->switches( %{$args{switches}} ) if $args{switches};
 
     return $obj;
@@ -380,20 +379,20 @@ sub _get_external_javascript {
         return $js;
     }
 
-    # FIXME not sure how the none HTTP URI works to get the complete file 
-    #       path in the case (but it does somehow)  Need to unit test this
-    #       code and figur out what's happening.
-    my $abs_js_uri =
-        $src =~ /^http/
-        ? URI->new( $src, $self->{abs_uri} )
-        : URI->new($src);
+    # if true its an absolute uri so no need to call new_abs
+    my $abs_js_uri = 
+          $src =~ /^http/ || ( $src =~ /^\// && $self->{abs_uri} =~ /^\// )
+        ? URI->new($src) 
+        : URI->new_abs( $src, $self->{abs_uri} );
 
     for my $method ( @{$self->{inline_methods}} ) {
         if ($method eq 'HTTP_GET') {
+            $self->_warn("attempting to fetch: $abs_js_uri")
+                if $self->{verbose};
             $js = get( $abs_js_uri );
         }
         elsif ( -d $method ) {
-            my $possible_js_file = $method . $abs_js_uri->path;
+            my $possible_js_file = URI->new_abs( $src, $method );
             if ( open( my $fh, '<', $possible_js_file ) ) {
                 $js = do { local $/; $/ = undef; <$fh> };
                 close $fh;
@@ -751,7 +750,7 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 1.02
+Version 1.1
 
 =head1 SYNOPSIS
 
@@ -1047,6 +1046,10 @@ You can find documentation for this module with the perldoc command.
 You can also look for information at:
 
 =over 4
+
+=item * JavaScript::XRay development mailing list
+
+L<http://groups.google.com/group/jsxray-dev>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 

@@ -2,7 +2,7 @@ NAME
     JavaScript::XRay - See What JavaScript is Doing
 
 VERSION
-    Version 1.02
+    Version 1.1
 
 SYNOPSIS
      #!/usr/bin/perl
@@ -244,6 +244,9 @@ SUPPORT
         perldoc JavaScript::XRay
 
     You can also look for information at:
+
+    * JavaScript::XRay development mailing list
+        <http://groups.google.com/group/jsxray-dev>
 
     * AnnoCPAN: Annotated CPAN documentation
         <http://annocpan.org/dist/JavaScript-XRay>
