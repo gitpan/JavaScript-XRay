@@ -5,7 +5,7 @@ use Carp qw(croak);
 use LWP::Simple qw(get);
 use URI;
 
-our $VERSION = '1.1';
+our $VERSION = '1.2';
 our $PACKAGE = __PACKAGE__;
 our %SWITCHES = (
     all => {
@@ -61,6 +61,8 @@ sub new {
         inline_methods   => ['HTTP_GET'],
         js_log           => '',
         js_log_init      => '',
+        js_switches      => '',
+        js_function_names => '',
     };
 
     bless $obj, $class;
@@ -100,6 +102,8 @@ sub switches {
               $ref_type eq 'ARRAY' && $SWITCHES{$switch}{ref_type} eq 'ARRAY'
             ? join(',', @{ $switches{$switch} })
             : $switches{$switch};
+            
+        $self->{js_switches} .= qq|${alias}_switches.push("${alias}_${switch}");\n|;
     }
     
     # init other switches so we don't get warnings
@@ -162,6 +166,7 @@ sub filter {
 
     $self->_uncomment( \$html ) if $switch->{uncomment};
     $self->_inject_console( \$html );
+
     $self->_inject_js_css( \$html );
 
     return $html;
@@ -215,7 +220,10 @@ sub _filter {
             $self->{js_log_init} .= "${alias}_exec_count['$name'] = 0;\n";
             $function            .= "${alias}_exec_count['$name']++;";
         }
-
+        
+        # functions for use in form to select query parameters
+        $self->_switch_function_options($name) if ($name ne 'ANON');
+        
         my %only_function = $switch->{only}
             ? map { $_ => 1 } split( /\,/, $switch->{only} )
             : ();
@@ -559,6 +567,19 @@ sub _inject_js_css {
             + ${alias}_sec    + ' ' + ${alias}_ampm;
     }
 
+    function ${alias}_toggle_switch() {
+        var obj = ${alias}_gel( '${alias}_switch' )
+        if ( !obj ) return;
+        var switch_button = ${alias}_gel( '${alias}_switch_button' )
+        if ( !switch_button ) return;
+        if ( obj.style.display == '' ) {
+            obj.style.display = 'none';
+        }
+        else {
+            obj.style.display = '';
+        }
+    }
+    
     function ${alias}_toggle_info() {
         var info = ${alias}_gel( '${alias}_info' )
         if ( !info ) return;
@@ -569,7 +590,7 @@ sub _inject_js_css {
             info_button.value = "Show Info";
         }
         else {
-           info.style.display = '';
+            info.style.display = '';
             info_button.value = "Hide Info";
         }
     }
@@ -595,6 +616,119 @@ sub _inject_js_css {
         }
     }
 
+    // Parameter switches
+    ${alias}_switches = [];
+    $self->{js_switches};
+    
+    // Reload url object
+    var ${alias}_reload = {};
+    ${alias}_reload.params = [];
+    
+    // Initialize switches parameters
+    ${alias}_reload.params_init = function() {
+        ${alias}_reload.params = [];
+    }
+    
+    // Add to switches parameters
+    ${alias}_reload.params_add = function (id, value) {
+        var query_str = id + "=" + value;
+        ${alias}_reload.params.push(query_str);
+        return;
+    }
+    
+    // Assemble url to reload page in after form submission
+    ${alias}_reload.params_final = function() {
+        var base_url = document.URL;
+        // Eliminate params for switches from url, keep others intact
+        var idx = document.URL.indexOf('?');
+        if (idx != -1) {
+            var switches_str = ${alias}_switches.join('~');
+            switches_str = '~'+switches_str+'~';
+            var url_params = document.URL.split('?');
+            base_url = url_params[0];
+            var pairs = url_params[1].split('&');
+            var n = pairs.length
+            for (var i=0; i<n; i++) {
+                name_value = pairs[i].split('=');
+                if (!switches_str.match("~"+name_value[0]+"~")) {
+                    ${alias}_reload.params.push(name_value[0]+'='+name_value[1]);
+                }
+           }
+        }
+        
+        var switch_params = ${alias}_reload.params.join("&");
+        var reload_url = base_url + "?" + switch_params;
+        location.replace(reload_url);
+    }
+    
+    function ${alias}_reload_console(form) {
+        // initialize params array
+        ${alias}_reload.params_init();
+        
+        for (var i=0; i < form.length; i++) {
+            var form_el = form.elements[i];
+            var id   = form_el.id;
+            // form element type: checkbox, text
+            var element_type = form_el.type;
+            switch (element_type) {
+                case "text":        //string values
+                    var val  = form_el.value;
+                    if (val != '') {
+                        ${alias}_reload.params_add(id, val);
+                    }
+                break;
+                case "checkbox":    //bool values
+                    // only checked values are added as params
+                    if (form_el.checked) {
+                        var val = '1';
+                        ${alias}_reload.params_add(id, val);
+                    }
+                break;
+                case "select-multiple":      //string values
+                    var sel = [];
+                    for (var j=0; j < form_el.options.length; j++) {
+                        var val = form_el.options[j].value;
+                        if (form_el.options[j].selected == true && val != '') {
+                            sel.push(val);
+                        }
+                    }
+                    if (sel.length > 0) {
+                        var str = sel.join(',');
+                        ${alias}_reload.params_add(id, str);
+                    }
+                break;
+            }
+            
+            //last form element, go ahead and assemble final url
+            if (i == (form.length - 1)) {
+                ${alias}_reload.params_final();
+            }
+        }
+    }
+    
+    function ${alias}_reset_console(form) {
+        for (var i=0; i < form.length; i++) {
+            var form_el = form.elements[i];
+            // form element type: checkbox, text
+            var element_type = form_el.type;
+            switch (element_type) {
+                case "text":                //string values
+                    form_el.value = "";
+                break;
+                case "checkbox":            //bool values
+                    if (form_el.checked) {
+                        form_el.checked = false;
+                    }
+                break;
+                case "select-multiple":      //string values
+                    for (var j=0; j < form_el.options.length; j++) {
+                        form_el.options[j].selected = false;
+                    }
+                break;
+            }
+        }
+    }
+    
     function ${alias}_gel( el ) {
         return document.getElementById ? document.getElementById( el ) : null;
     }
@@ -621,7 +755,9 @@ sub _inject_console {
     <input type="button" value="Show Info" id="${alias}_info_button" 
         onClick="${alias}_toggle_info()" class="${alias}_button">
     <input type="button" value="Clear" onClick="${alias}_clear()" 
-        class="${alias}_button">|;
+        class="${alias}_button"> 
+    <input type="button" value="Change Switches" id="${alias}_switch_button" 
+        onClick="${alias}_toggle_switch()" class="${alias}_button">|;
 
     $iframe .= qq| <input type="button" value="Execution Counts" 
         onClick="${alias}_alert_counts()" class="${alias}_button">|
@@ -648,6 +784,42 @@ sub _inject_console {
     </table>
     </center>
     </div>
+
+    
+    <div id="${alias}_switch" class="${alias}_buttons" style='display:none;'>
+    <div class="${alias}_form_border">
+    <table width="100%" cellpadding="1" cellspacing="1" border="0">
+    <tr><td align="right"><div class="${alias}_closebutton" onClick="${alias}_toggle_switch()">X</div></td></tr>
+    <tr><td>Use 'Ctrl' key to choose function names in multiple selection boxes. Click on "Reload Console" for new switches to take effect.</td></tr></table>
+    <br>
+    <table cellpadding=1 cellspacing=0 border=0>
+    <form name="switch_console" id="switch_console" method="get" action="">|;
+    
+    for my $switch (@SWITCH_KEYS) {
+        next if ( $switch eq 'all' );
+        my $value = $switches->{$switch} || '';
+        my $form_element;
+        if ( $SWITCHES{$switch}{type} eq 'bool' ) {
+            my $checkbox_value = $value ? ' checked' : "";
+            $form_element = qq|<input type="checkbox" value=""$checkbox_value id="${alias}_$switch">|;
+        }
+        elsif ( $SWITCHES{$switch}{type} =~ /string/ ) {
+            $form_element = qq|<input type="text" size="40" value="$value" id="${alias}_$switch">|;
+        }
+        elsif ( $SWITCHES{$switch}{type} =~ /function/ ) {
+            $form_element = qq|<select multiple size="5" id="${alias}_$switch"><option value="">-- None -- $self->{js_function_names}</select>|;
+        }
+        $iframe .= qq|<tr class="${alias}_desc" valign="top"><td align="right">${alias}_$switch:&nbsp;</td><td>$form_element</td></tr>|;
+    }
+    
+    $iframe .= qq|
+    <tr><td colspan="2">&nbsp;</td></tr>
+    <tr align="center"><td colspan="2"><input type="button" value="Reload Console" onClick="${alias}_reload_console(this.form);" class="${alias}_button"> &nbsp; <input type="button" value="Reset"  onClick="${alias}_reset_console(this.form);" class="${alias}_button"></tr>
+    </form>
+    </table>
+    </div>
+    </div>
+    
     <div class="${alias}_iframe_padding">
     <div class="${alias}_iframe_border">
     <iframe id="${alias}_iframe" name="${alias}_iframe" class="${alias}_iframe"></iframe>
@@ -670,10 +842,10 @@ sub _css {
         font-size: 12px; 
         background-color: white;
     }
-    td.${alias}_desc, td.${alias}_value, .${alias}_buttons {
+    tr.${alias}_desc, td.${alias}_desc, td.${alias}_value, .${alias}_buttons {
         background-color: #D3D3D3
     }
-    td.${alias}_desc, td.${alias}_value, .${alias}_version {
+    tr.${alias}_desc, td.${alias}_desc, td.${alias}_value, .${alias}_version {
         font-size: 12px; 
     }
     .${alias}_buttons { 
@@ -712,6 +884,21 @@ sub _css {
         background-color: #D3D3D3;
         border-width: 1px;
         border-color: #a9a9a9;
+    }
+    .${alias}_form_border {
+        border: 1px dashed #5e5e5e;
+        padding: 5px;
+        width: 50%;
+    }
+    .${alias}_closebutton {
+        border:1px solid #5e5e5e; 
+        width:10px; padding:1px; 
+        font:10px arial,sans-serif; 
+        text-align:center; 
+        color:#5e5e5e; 
+        vertical-align:middle; 
+        cursor:pointer; 
+        cursor:hand;
     }|;
 
     # cat inline css
@@ -737,8 +924,17 @@ sub _warn {
     warn "[$alias] $msg\n" if $self->{verbose};
     $self->{js_log} .= qq|    ${alias}_pre_iframe_queue.push(|
         . qq|"${PACKAGE}-&gt;filter $msg");\n|;
+    
     return;
 }
+
+sub _switch_function_options {
+    my ( $self, $msg ) = @_;
+    my $alias = $self->{alias};
+    $self->{js_function_names} .= qq|<option value="$msg">$msg|;
+    return;
+}
+
 
 1;
 
@@ -750,7 +946,7 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 1.1
+Version 1.2
 
 =head1 SYNOPSIS
 

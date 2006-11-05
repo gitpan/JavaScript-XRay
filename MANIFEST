@@ -3,6 +3,7 @@ MANIFEST
 META.yml # Will be created by "make dist"
 Makefile.PL
 README
+examples/jsxray
 lib/JavaScript/XRay.pm
 bin/jsxray
 t/00-load.t
