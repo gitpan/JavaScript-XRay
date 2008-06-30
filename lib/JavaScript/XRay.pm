@@ -4,8 +4,9 @@ use strict;
 use Carp qw(croak);
 use LWP::Simple qw(get);
 use URI;
+use constant IFRAME_DEFAULT_HEIGHT => 200;
 
-our $VERSION = '1.2';
+our $VERSION = '1.21';
 our $PACKAGE = __PACKAGE__;
 our %SWITCHES = (
     all => {
@@ -54,7 +55,7 @@ sub new {
     my $alias = $args{alias} || 'jsxray';
     my $obj = {
         alias            => $alias,
-        iframe_height    => $args{iframe_height} || 200,
+        iframe_height    => $args{iframe_height} || IFRAME_DEFAULT_HEIGHT,
         css_inline       => $args{css_inline},
         css_external     => $args{css_external},
         verbose          => $args{verbose},
@@ -83,7 +84,7 @@ sub _init_uri {
 sub switches {
     my ( $self, %switches ) = @_;
     return $self->{switches} unless keys %switches;
- 
+
     # allow 'jsxray_uncomment' or just 'uncomment'
     my $alias = $self->{alias};
     %switches = map {
@@ -98,14 +99,14 @@ sub switches {
             next;
         }
         my $ref_type = ref $switches{$switch};
-        $self->{switches}{$switch} = 
+        $self->{switches}{$switch} =
               $ref_type eq 'ARRAY' && $SWITCHES{$switch}{ref_type} eq 'ARRAY'
             ? join(',', @{ $switches{$switch} })
             : $switches{$switch};
-            
+
         $self->{js_switches} .= qq|${alias}_switches.push("${alias}_${switch}");\n|;
     }
-    
+
     # init other switches so we don't get warnings
     for my $switch (@SWITCH_KEYS) {
         $self->{switches}{$switch} = ''
@@ -179,7 +180,7 @@ sub _filter {
 
     my $new_html = '';
     while (
-        $work_html =~ m/ 
+        $work_html =~ m{
             \G
             (.+?)
             (
@@ -193,7 +194,7 @@ sub _filter {
                 \s*
                 \{
             )
-        /cgimosx
+        }cgimosx
         )
     {
 
@@ -220,14 +221,14 @@ sub _filter {
             $self->{js_log_init} .= "${alias}_exec_count['$name'] = 0;\n";
             $function            .= "${alias}_exec_count['$name']++;";
         }
-        
+
         # functions for use in form to select query parameters
         $self->_switch_function_options($name) if ($name ne 'ANON');
         
         my %only_function = $switch->{only}
             ? map { $_ => 1 } split( /\,/, $switch->{only} )
             : ();
-        my %skip_function = $switch->{skip} 
+        my %skip_function = $switch->{skip}
             ? map { $_ => 1 } split( /\,/, $switch->{skip} )
             : ();
 
@@ -286,7 +287,7 @@ sub _inline_javascript {
 
     # look through the HTML for script blocks
     while (
-        $work_html =~ m/
+        $work_html =~ m{
         \G
         (.*?)
         (
@@ -294,7 +295,7 @@ sub _inline_javascript {
             .*?
             <\/script>
         )
-        /cgimosx
+        }cgimosx
         )
     {
         $new_html .= $1;
@@ -302,13 +303,13 @@ sub _inline_javascript {
 
         # pull out both script attributes and inner script
         while (
-            $script_block =~ /
+            $script_block =~ m{
                 <script
                 (.*?)
                 \s*?>
                 (.*?)
                 <\/script>
-            /cgimosx
+            }cgimosx
             )
         {
             my ( $script_attrs, $inner_script ) = ( $1, $2 );
@@ -319,7 +320,7 @@ sub _inline_javascript {
             # and has no value
             my %attrs = ();
             while (
-                $script_attrs =~ /
+                $script_attrs =~ m{
                 \G
                 \s*
                 (?: (defer) | 
@@ -329,7 +330,7 @@ sub _inline_javascript {
                     \s*
                     (?: [\"\'](.+?)[\"\'] | (\w+) )
                 )
-                /cgimosx
+                }cgimosx
                 )
             {
 
@@ -388,9 +389,9 @@ sub _get_external_javascript {
     }
 
     # if true its an absolute uri so no need to call new_abs
-    my $abs_js_uri = 
+    my $abs_js_uri =
           $src =~ /^http/ || ( $src =~ /^\// && $self->{abs_uri} =~ /^\// )
-        ? URI->new($src) 
+        ? URI->new($src)
         : URI->new_abs( $src, $self->{abs_uri} );
 
     for my $method ( @{$self->{inline_methods}} ) {
@@ -800,7 +801,7 @@ sub _inject_console {
         my $value = $switches->{$switch} || '';
         my $form_element;
         if ( $SWITCHES{$switch}{type} eq 'bool' ) {
-            my $checkbox_value = $value ? ' checked' : "";
+            my $checkbox_value = $value ? ' checked' : '';
             $form_element = qq|<input type="checkbox" value=""$checkbox_value id="${alias}_$switch">|;
         }
         elsif ( $SWITCHES{$switch}{type} =~ /string/ ) {
@@ -946,7 +947,7 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 1.2
+Version 1.21
 
 =head1 SYNOPSIS
 

@@ -1,5 +1,17 @@
 Revision history for JavaScript-XRay
 
+1.21    6/28/2008
+        - fixed t/pod.t and t/pod_coverage.t to require instead of
+          use to see if they were present. (fixed CPANT errors)
+        - perlcritic updates
+            - added IFRAME_DEFAULT_HEIGHT constant of 200
+            - removed trailing whitespace
+            - fixed regexps with /x modifier to use {} instead fo //
+            - fixed useless interpolation of strings - changed "" to ''
+        - added use strict/use warnings to 00-load.t
+        - added use strict/use warnings to 01-basic.t
+        - moved repository to git - thanks rjbs
+
 1.2     11/5/2006
         - Added Senta McAdoo's dynamic form to update functions
         - Updated Makefile.PL to include LICENSE for CPANTS

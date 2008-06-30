@@ -4,9 +4,9 @@ use strict;
 use warnings;
 use Test::More tests => 3;
 
-sub not_in_file_ok { 
+sub not_in_file_ok {
     my ($filename, %regex) = @_;
-    open my $fh, "<", $filename
+    open my $fh, '<', $filename
         or die "couldn't open $filename for reading: $!";
 
     my %violated;
@@ -25,15 +25,17 @@ sub not_in_file_ok {
     } else {
         pass("$filename contains no boilerplate text");
     }
+
+    return;
 }
 
 not_in_file_ok(README =>
-    "The README is used..."       => qr/The README is used/,
-    "'version information here'"  => qr/to provide version information/,
+    'The README is used...'        => qr/The README is used/,
+    '\'version information here\'' => qr/to provide version information/,
 );
 
 not_in_file_ok(Changes =>
-    "placeholder date/time"       => qr(Date/time)
+    'placeholder date/time'       => qr{Date/time}
 );
 
 sub module_boilerplate_ok {
@@ -42,6 +44,7 @@ sub module_boilerplate_ok {
         'the great new $MODULENAME'   => qr/ - The great new /,
         'boilerplate description'     => qr/Quick summary of what the module/,
     );
+    return;
 }
 
 module_boilerplate_ok('lib/JavaScript/XRay.pm');

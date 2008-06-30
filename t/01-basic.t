@@ -1,5 +1,6 @@
-#!perl -T
-
+#!/usr/bin/perl
+use strict;
+use warnings;
 use Test::More tests => 14;
 
 BEGIN { use_ok( 'JavaScript::XRay' ); }
@@ -14,88 +15,81 @@ isa_ok( $jsxray, 'JavaScript::XRay' );
 
 # basic test
 my $xrayed_page = $jsxray->filter($test_page);
-like( $xrayed_page, qr/jsxray/s, "Page Successfully Filtered" );
+like( $xrayed_page, qr/jsxray/s, 'Page Successfully Filtered' );
 
-# complex test 
-$jsxray = JavaScript::XRay->new( 
+# complex test
+$jsxray = JavaScript::XRay->new(
     switches => {
-        skip          => "start_stop_clock",
-        uncomment     => "Test,Test2",
+        skip          => 'start_stop_clock',
+        uncomment     => 'Test,Test2',
         anon          => 1,
         no_exec_count => 1,
     },
-    alias        => "testit",
-    css_inline   => "INLINE",
-    css_external => "EXTERNAL",
+    alias        => 'testit',
+    css_inline   => 'INLINE',
+    css_external => 'EXTERNAL',
 );
 $xrayed_page = $jsxray->filter($test_page);
 
 # test to find gel
-like( $xrayed_page, qr/testit\(\'gel/s, "Test filter function 'gel'" );
+like( $xrayed_page, qr/testit\('gel/s, 'Test filter function gel' );
 
 # test to skip start_stop_clock
 unlike( $xrayed_page, qr/testit\(\'start/s,
-    "Test filter function skip 'start_stop_clock'" );
+    'Test filter function skip start_stop_clock' );
 
 # test to skip start_stop_clock
-like( $xrayed_page, qr/ANON/s, "Test filter function 'ANON'" );
+like( $xrayed_page, qr/ANON/s, 'Test filter function ANON' );
 
 # test croak to avoid recursive loop
 eval {
-    $jsxray = JavaScript::XRay->new( 
+    $jsxray = JavaScript::XRay->new(
         alias => 'jsdebug',
         switches => {
-            jsdebug_only          => "NONE1,NONE2",
-            jsdebug_uncomment     => "Test,Test2",
+            jsdebug_only          => 'NONE1,NONE2',
+            jsdebug_uncomment     => 'Test,Test2',
         },
         iframe_height => 1,
     );
     $xrayed_page = $jsxray->filter($test_page);
 };
-like($@, qr/may not match alias/, "Test croak to avoid recursive loop");
+like($@, qr/may not match alias/, 'Test croak to avoid recursive loop');
 
 # testing uncomment of DEBUG1 and and leave comment DEBUG2
-$jsxray = JavaScript::XRay->new( 
+$jsxray = JavaScript::XRay->new(
     alias => 'jstest',
     switches => {
-        jstest_only      => "NONE1,NONE2",
+        jstest_only      => 'NONE1,NONE2',
         jstest_anon      => 1,
-        jstest_uncomment => "DEBUG1",
+        jstest_uncomment => 'DEBUG1',
     },
     iframe_height => 1,
 );
 $xrayed_page = $jsxray->filter($test_page);
-unlike( $xrayed_page, qr/DEBUG1 test/s, "Test uncomment of DEBUG1" );
-like(   $xrayed_page, qr/\/\/DEBUG2 test/s, "Test comment DEBUG2 still there" );
+unlike( $xrayed_page, qr/DEBUG1 test/s, 'Test uncomment of DEBUG1' );
+like(   $xrayed_page, qr/\/\/DEBUG2 test/s, 'Test comment DEBUG2 still there' );
 
 # test function pattern matching
-$jsxray = JavaScript::XRay->new( 
-    switches => {
-        jsxray_match => "start",
-    },
-);
+$jsxray = JavaScript::XRay->new( switches => { jsxray_match => 'start' } );
 $xrayed_page = $jsxray->filter($test_page);
-unlike( $xrayed_page, qr/jsxray\(\'gel/s, "Test not match function 'gel'" );
-like( $xrayed_page, qr/jsxray\(\'start_stop_clock/s,
-    "Test not match function 'start_stop_clock'" );
+unlike( $xrayed_page, qr/jsxray\('gel/s, 'Test not match function gel' );
+like( $xrayed_page, qr/jsxray\('start_stop_clock/s, 'Test not match function start_stop_clock' );
 
 # test undef switch and anon + switch only
-$jsxray = JavaScript::XRay->new( 
+$jsxray = JavaScript::XRay->new(
     switches => {
         jsxray_anon => 1,
         jsxray_skip => undef,
-        jsxray_only => "start_stop_clock",
+        jsxray_only => 'start_stop_clock',
     },
 );
 $xrayed_page = $jsxray->filter($test_page);
-like( $xrayed_page, qr/jsxray/s, "test undef switch and anon + switch only" );
+like( $xrayed_page, qr/jsxray/s, 'test undef switch and anon + switch only' );
 
 # test anon only
-$jsxray = JavaScript::XRay->new( 
-    switches => { jsxray_anon => 1, },
-);
+$jsxray = JavaScript::XRay->new( switches => { jsxray_anon => 1 } );
 $xrayed_page = $jsxray->filter($test_page);
-like( $xrayed_page, qr/jsxray/s, "test anon only" );
+like( $xrayed_page, qr/jsxray/s, 'test anon only' );
 
 __DATA__
 <html>

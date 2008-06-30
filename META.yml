@@ -1,9 +1,11 @@
 --- #YAML:1.0
 name:                JavaScript-XRay
-version:             1.2
+version:             1.21
 abstract:            See What JavaScript is Doing
 license:             perl
-generated_by:        ExtUtils::MakeMaker version 6.31
+author:              
+    - Jeff Bisbee <jbisbee@cpan.org>
+generated_by:        ExtUtils::MakeMaker version 6.44
 distribution_type:   module
 requires:     
     Carp:                          0
@@ -15,7 +17,5 @@ requires:
     Test::More:                    0
     URI:                           0
 meta-spec:
-    url:     http://module-build.sourceforge.net/META-spec-v1.2.html
-    version: 1.2
-author:
-    - Jeff Bisbee <jbisbee@cpan.org>
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3
