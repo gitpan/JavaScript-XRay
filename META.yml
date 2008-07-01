@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                JavaScript-XRay
-version:             1.21
+version:             1.22
 abstract:            See What JavaScript is Doing
 license:             perl
 author:              

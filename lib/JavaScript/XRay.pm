@@ -6,7 +6,7 @@ use LWP::Simple qw(get);
 use URI;
 use constant IFRAME_DEFAULT_HEIGHT => 200;
 
-our $VERSION = '1.21';
+our $VERSION = '1.22';
 our $PACKAGE = __PACKAGE__;
 our %SWITCHES = (
     all => {
@@ -188,9 +188,9 @@ sub _filter {
                 \s*
                 (?:\w|_)+?
                 \s*?
-                \(
+                [(]
                 .+?
-                \)?
+                [)]?
                 \s*
                 \{
             )
@@ -212,7 +212,7 @@ sub _filter {
             if $name eq $alias;
 
         # find the function arguments
-        my ($args) = $function =~ m/function\s*$name?\s*?\((.+?)\)/gx;
+        my ($args) = $function =~ m/function\s*$name?\s*?[(](.+?)[)]/gx;
         $name = 'ANON' unless $name;
 
         unless ( $switch->{no_exec_count}
@@ -403,7 +403,7 @@ sub _get_external_javascript {
         elsif ( -d $method ) {
             my $possible_js_file = URI->new_abs( $src, $method );
             if ( open( my $fh, '<', $possible_js_file ) ) {
-                $js = do { local $/; $/ = undef; <$fh> };
+                $js = do { local $/ = undef; <$fh> };
                 close $fh;
             }
             else {
@@ -947,7 +947,7 @@ JavaScript::XRay - See What JavaScript is Doing
 
 =head1 VERSION
 
-Version 1.21
+Version 1.22
 
 =head1 SYNOPSIS
 

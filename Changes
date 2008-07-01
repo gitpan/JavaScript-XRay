@@ -1,5 +1,12 @@
 Revision history for JavaScript-XRay
 
+1.22   6/29/2008
+        - perlcritic updates
+            - fixed Use character classes for literal metachars instead of escapes
+            - fixed "local" variable not initialized
+            - bin/jsxray passes all my perl critic tests
+        - update README from pod
+
 1.21    6/28/2008
         - fixed t/pod.t and t/pod_coverage.t to require instead of
           use to see if they were present. (fixed CPANT errors)

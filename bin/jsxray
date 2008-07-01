@@ -3,10 +3,12 @@ use strict;
 use warnings;
 use lib '/Users/jbisbee/src/JavaScript-XRay/lib';
 use JavaScript::XRay;
-use Getopt::Long;
+use Getopt::Long qw(GetOptions);
 use Pod::Usage qw(pod2usage);
 use File::Spec::Functions qw(rel2abs splitpath);
 use File::Basename qw(fileparse);
+
+sub FILENAME_INDEX { return -2 };
 
 our $VERSION = '0.03';
 my ( $verbose, $alias, $iframe_height, $css_external );
@@ -14,10 +16,10 @@ my ( $all, $none, $anon, @skip, @only, @uncomment, $no_exec_count, $match );
 
 # Stick any default switches at the beginning, so they can be overridden
 # by the command line switches.
-unshift @ARGV, split( " ", $ENV{JSXRAY_SWITCHES} )
+unshift @ARGV, split( ' ', $ENV{JSXRAY_SWITCHES} )
     if defined $ENV{JSXRAY_SWITCHES};
 
-Getopt::Long::Configure("no_ignore_case");
+Getopt::Long::Configure('no_ignore_case');
 GetOptions(
     'alias=s'         => \$alias,
     'iframe-height=s' => \$iframe_height,
@@ -38,7 +40,7 @@ GetOptions(
 
 for my $file ( @ARGV ) {
     open my $fh, '<', $file or die "can't open $file: $!";
-    my $html = do { local $/; <$fh> };
+    my $html = do { local $/ = undef; <$fh> };
     close $fh;
 
     my $abs_uri = rel2abs($file);
@@ -61,14 +63,14 @@ for my $file ( @ARGV ) {
         match         => $match,
     );
 
-    my $dir = (splitpath($abs_uri))[1];
-    $jsxray->inline_methods("HTTP_GET", $dir);
+    my $dir = ( splitpath($abs_uri) )[1];
+    $jsxray->inline_methods( 'HTTP_GET', $dir );
 
     # build new filename
-    my ($name,$path) = fileparse($abs_uri); 
-    if ($name =~ /\./) {
-        my @parts = split(/\./,$name);
-        $parts[-2] .= '-xrayed';
+    my ($name,$path) = fileparse($abs_uri);
+    if ($name =~ /[.]/) {
+        my @parts = split(/[.]/,$name);
+        $parts[FILENAME_INDEX] .= '-xrayed';
         $name = join( '.', @parts );
     }
     else {
